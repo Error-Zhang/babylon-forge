@@ -203,7 +203,7 @@ abstract class WebGPUApplication {
 	public engine!: WebGPUEngine;
 	protected canvas!: HTMLCanvasElement;
 
-	protected constructor(
+	constructor(
 		protected canvasId: string,
 		private engineMode: EngineMode,
 		private options?: WebGPUEngineOptions
@@ -238,9 +238,8 @@ abstract class WebGPUApplication {
 
 			this.onEngineInitialized();
 		} catch (error) {
-			console.logError('WebGPU应用程序初始化失败:', error);
 			this.onInitializationError?.(error as Error);
-			throw error;
+			throw new Error('WebGPU应用程序初始化失败:' + error);
 		}
 	}
 

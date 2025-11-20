@@ -3,15 +3,16 @@ import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
 import { INJECT_TOKENS, SCENE_MAPPINGS } from '@/entry/constants.ts';
 import { type Ref, useRef } from '@/core/reactivity';
 import { diContainer } from '@/global/DIContainer.ts';
+import type { InitConfig } from '@/core/WebGpuStarter.ts';
+import utils from '@/utils';
 
 export class SceneManager {
 	private sceneMap: Map<string, new () => DemoSceneClass> = new Map();
 	private _currentScene?: Scene;
-	private _currentSceneInstance?: DemoSceneClass;
 
 	private _isLoadingRef = useRef(false);
 
-	constructor() {
+	constructor(private config: InitConfig) {
 		diContainer.register(INJECT_TOKENS.IsSceneLoading, this._isLoadingRef);
 	}
 
@@ -29,10 +30,10 @@ export class SceneManager {
 		Object.entries(sceneMappings).forEach(([key, importFn]) => {
 			// 使用一个包装类来实现懒加载场景，以及后续拓展
 			class SceneWrapper extends DemoSceneClass {
-				async create() {
+				async create(config: InitConfig) {
 					const SceneClass = await importFn();
 					const instance = new SceneClass();
-					return instance.create();
+					return instance.create(config);
 				}
 			}
 
@@ -44,7 +45,7 @@ export class SceneManager {
 	public async loadScene(sceneKey: string) {
 		if (this._isLoadingRef.value) {
 			console.logWarn('Scene is already loading, please wait...');
-			return false;
+			return;
 		}
 
 		try {
@@ -52,7 +53,7 @@ export class SceneManager {
 
 			if (!this.sceneMap.has(sceneKey)) {
 				console.logError(`Scene with key '${sceneKey}' is not registered`);
-				return false;
+				return;
 			}
 
 			this.disposeCurrentScene();
@@ -60,16 +61,21 @@ export class SceneManager {
 			const importFn = SCENE_MAPPINGS[sceneKey as keyof typeof SCENE_MAPPINGS];
 			if (!importFn) {
 				console.logError(`No import function found for scene '${sceneKey}'`);
-				return false;
+				return;
 			}
+
+			console.logLoading(`waiting for '${sceneKey}'`);
 
 			const SceneClass = await importFn();
 			const sceneInstance = new SceneClass() as DemoSceneClass;
 
-			this._currentScene = await sceneInstance.create();
-			this._currentSceneInstance = sceneInstance;
+			this._currentScene = await sceneInstance.create(this.config);
+			this._currentScene.metadata ??= {};
+			this._currentScene.metadata.name = sceneKey;
 
-			return true;
+			utils.url_query.set('scene', sceneKey);
+
+			return this._currentScene;
 		} catch (error) {
 			throw new Error(`Failed to load scene '${sceneKey}' Because ${error}`);
 		} finally {
@@ -86,7 +92,6 @@ export class SceneManager {
 	}
 
 	public disposeCurrentScene() {
-		this._currentSceneInstance?.dispose();
 		this._currentScene?.dispose();
 	}
 

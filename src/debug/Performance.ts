@@ -47,7 +47,7 @@ export class PerformanceMonitor {
 	private readonly engine!: WebGPUEngine;
 
 	@Inject('MineScene')
-	private readonly scene!: Scene;
+	private scene!: Scene;
 
 	@Inject('SceneManager')
 	private readonly sceneManager!: SceneManager;
@@ -102,14 +102,8 @@ export class PerformanceMonitor {
 		const currentScene = this.sceneManager.currentScene;
 		const isLoading = this.sceneManager.isLoadingSceneRef;
 
-		// 尝试从场景名称中提取场景类型
-		let currentSceneName = 'Unknown';
-		if (currentScene && currentScene.metadata) {
-			currentSceneName = currentScene.metadata.sceneName || 'Unknown';
-		}
-
 		return {
-			currentScene: currentSceneName,
+			currentScene: currentScene?.metadata.name || 'Unknown',
 			availableScenes,
 			isLoading,
 		};
@@ -119,7 +113,9 @@ export class PerformanceMonitor {
 	 * 切换场景
 	 */
 	public async switchScene(sceneKey: string): Promise<boolean> {
-		return await this.sceneManager.loadScene(sceneKey);
+		const scene = await this.sceneManager.loadScene(sceneKey);
+		if (scene) this.scene = scene;
+		return !!scene;
 	}
 
 	/**
@@ -255,9 +251,6 @@ interface PerformanceThresholds {
 	warningMeshCount: number; // 警告的网格数阈值
 }
 
-/**
- * Babylon.js 完整性能监控面板
- */
 export class PerformancePanel {
 	private monitor: PerformanceMonitor;
 	private config: Required<BabylonPanelConfig>;
@@ -364,73 +357,46 @@ export class PerformancePanel {
 		}
 	};
 
-	/**
-	 * 设置性能面板控制快捷键
-	 */
 	private setupControls() {
 		document.addEventListener('keydown', this.eventHandlers.toggleFun);
 	}
 
-	/**
-	 * 开始监控
-	 */
 	public start() {
 		this.monitor.start();
 		this.startUpdateTimer();
 		this.setupControls();
 	}
 
-	/**
-	 * 停止监控
-	 */
 	public stop() {
 		this.monitor.stop();
 		this.stopUpdateTimer();
 	}
 
-	/**
-	 * 显示/隐藏面板
-	 */
 	public toggle() {
 		this.panelElement.style.display = this.isVisibleRef.value ? 'block' : 'none';
 	}
 
-	/**
-	 * 获取活跃网格历史数据
-	 */
 	private getActiveMeshesHistory(): number[] {
 		// 从当前metrics中获取活跃网格数
 		const metrics = this.monitor.getMetrics();
 		return [metrics.activeMeshes];
 	}
 
-	/**
-	 * 获取活跃粒子历史数据
-	 */
 	private getActiveParticlesHistory(): number[] {
 		const metrics = this.monitor.getMetrics();
 		return [metrics.activeParticles];
 	}
 
-	/**
-	 * 获取活跃灯光历史数据
-	 */
 	private getActiveLightsHistory(): number[] {
 		const metrics = this.monitor.getMetrics();
 		return [metrics.activeLights];
 	}
 
-	/**
-	 * 获取活跃纹理历史数据
-	 */
 	private getActiveTexturesHistory(): number[] {
 		const metrics = this.monitor.getMetrics();
 		return [metrics.activeTextures];
 	}
 
-	/**
-	 * 销毁面板
-	 */
 	public destroy() {
 		this.stop();
 		this.cleanupEventListeners();
@@ -441,9 +407,6 @@ export class PerformancePanel {
 		this.panelElement.parentNode?.removeChild(this.panelElement);
 	}
 
-	/**
-	 * 清理所有事件监听器
-	 */
 	private cleanupEventListeners() {
 		// 清理键盘快捷键事件
 		document.removeEventListener('keydown', this.eventHandlers.toggleFun);
@@ -472,9 +435,6 @@ export class PerformancePanel {
 		document.removeEventListener('mouseup', this.eventHandlers.dragEndHandler);
 	}
 
-	/**
-	 * 处理场景切换
-	 */
 	private async handleSceneChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
 		const selectedScene = target.value;
@@ -489,9 +449,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 清理曲线选择器的事件监听器
-	 */
 	private cleanupCurveSelectorListeners() {
 		const checkboxes = this.panelElement.querySelectorAll('.curve-checkbox input[type="checkbox"]');
 		checkboxes.forEach((checkbox: Element) => {
@@ -507,9 +464,6 @@ export class PerformancePanel {
 		});
 	}
 
-	/**
-	 * 创建面板元素
-	 */
 	private createPanelElement(): HTMLDivElement {
 		const panel = document.createElement('div');
 		panel.className = 'babylon-performance-panel';
@@ -518,9 +472,6 @@ export class PerformancePanel {
 		return panel;
 	}
 
-	/**
-	 * 应用样式
-	 */
 	private applyStyles(panel: HTMLDivElement) {
 		const isDark = this.config.theme === 'dark';
 
@@ -549,9 +500,6 @@ export class PerformancePanel {
 		this.addInternalStyles();
 	}
 
-	/**
-	 * 获取位置样式
-	 */
 	private getPositionStyles(): string {
 		const margin = '20px';
 		switch (this.config.position) {
@@ -568,9 +516,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 设置事件监听器
-	 */
 	private setupEventListeners() {
 		const header = this.panelElement.querySelector('.panel-header') as HTMLElement;
 		const minimizeBtn = this.panelElement.querySelector('.minimize-btn') as HTMLButtonElement;
@@ -597,9 +542,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 设置曲线选择器事件
-	 */
 	private setupCurveSelector() {
 		const checkboxes = this.panelElement.querySelectorAll('.curve-checkbox input[type="checkbox"]');
 		checkboxes.forEach((checkbox: Element) => {
@@ -629,16 +571,10 @@ export class PerformancePanel {
 	private dragStartLeft = 0;
 	private dragStartTop = 0;
 
-	/**
-	 * 设置拖拽功能
-	 */
 	private setupDragFunctionality(header: HTMLElement) {
 		header.addEventListener('mousedown', this.eventHandlers.dragStartHandler);
 	}
 
-	/**
-	 * 处理拖拽开始
-	 */
 	private handleDragStart(e: MouseEvent) {
 		this.isDragging = true;
 		this.dragStartX = e.clientX;
@@ -652,9 +588,6 @@ export class PerformancePanel {
 		e.preventDefault();
 	}
 
-	/**
-	 * 处理拖拽移动
-	 */
 	private handleDragMove(e: MouseEvent) {
 		if (!this.isDragging) return;
 
@@ -667,27 +600,18 @@ export class PerformancePanel {
 		this.panelElement.style.bottom = 'auto';
 	}
 
-	/**
-	 * 处理拖拽结束
-	 */
 	private handleDragEnd() {
 		this.isDragging = false;
 		document.removeEventListener('mousemove', this.eventHandlers.dragMoveHandler);
 		document.removeEventListener('mouseup', this.eventHandlers.dragEndHandler);
 	}
 
-	/**
-	 * 开始更新定时器
-	 */
 	private startUpdateTimer() {
 		this.updateTimer = window.setInterval(() => {
 			this.updateDisplay();
 		}, this.config.updateInterval);
 	}
 
-	/**
-	 * 停止更新定时器
-	 */
 	private stopUpdateTimer() {
 		if (this.updateTimer) {
 			clearInterval(this.updateTimer);
@@ -696,10 +620,8 @@ export class PerformancePanel {
 		this.cleanupEventListeners();
 	}
 
-	/**
-	 * 更新显示
-	 */
 	private updateDisplay() {
+		if (!this.isVisibleRef.value) return;
 		const metrics = this.monitor.getMetrics();
 		this.updateMetricsDisplay(metrics);
 
@@ -710,9 +632,6 @@ export class PerformancePanel {
 		this.updateStatusIndicator(metrics);
 	}
 
-	/**
-	 * 更新指标显示
-	 */
 	private updateMetricsDisplay(metrics: BabylonPerformanceMetrics) {
 		// 基础性能
 		this.updateElement('.fps-value', metrics.fps.toFixed(1));
@@ -758,9 +677,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 更新WebGPU信息
-	 */
 	private updateWebGPUInfo(metrics: BabylonPerformanceMetrics) {
 		const engineInfo = metrics.engineInfo;
 
@@ -772,9 +688,6 @@ export class PerformancePanel {
 		this.updateElement('.device-architecture-value', engineInfo.adapterInfo.architecture || 'Unknown');
 	}
 
-	/**
-	 * 更新元素内容
-	 */
 	private updateElement(selector: string, value: string) {
 		const element = this.panelElement.querySelector(selector) as HTMLElement;
 		if (element) {
@@ -782,9 +695,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 格式化数字
-	 */
 	private formatNumber(num: number): string {
 		if (num >= 1000000) {
 			return (num / 1000000).toFixed(1) + 'M';
@@ -794,9 +704,6 @@ export class PerformancePanel {
 		return num.toString();
 	}
 
-	/**
-	 * 更新图表
-	 */
 	private updateGraph(metrics: BabylonPerformanceMetrics) {
 		if (!this.canvas || !this.ctx) return;
 
@@ -804,9 +711,6 @@ export class PerformancePanel {
 		this.drawBabylonGraph(historyData);
 	}
 
-	/**
-	 * 绘制曲线
-	 */
 	private drawCurve(data: number[], color: string, minVal: number, maxVal: number, offsetY: number) {
 		if (!this.ctx || !this.canvas) return;
 
@@ -833,9 +737,6 @@ export class PerformancePanel {
 		ctx.stroke();
 	}
 
-	/**
-	 * 绘制Babylon.js特有的多曲线图表
-	 */
 	private drawBabylonGraph(historyData: any) {
 		if (!this.canvas || !this.ctx) return;
 
@@ -857,9 +758,6 @@ export class PerformancePanel {
 		});
 	}
 
-	/**
-	 * 获取指定曲线的数据
-	 */
 	private getCurveData(curve: any, historyData: any): number[] | null {
 		switch (curve.id) {
 			case 'fps':
@@ -879,9 +777,6 @@ export class PerformancePanel {
 		}
 	}
 
-	/**
-	 * 更新状态指示器
-	 */
 	private updateStatusIndicator(metrics: BabylonPerformanceMetrics) {
 		const statusElement = this.panelElement.querySelector('.status-indicator') as HTMLElement;
 		const statusText = this.panelElement.querySelector('.status-text') as HTMLElement;
@@ -890,7 +785,6 @@ export class PerformancePanel {
 
 		statusElement.className = 'status-indicator';
 
-		// Babylon.js 性能评估 - 基于FPS和渲染复杂度
 		const vertexCount = metrics.totalVertices;
 		const meshCount = metrics.totalMeshes;
 		const activeMeshCount = metrics.activeMeshes;
@@ -958,10 +852,12 @@ export class PerformancePanel {
       <div class="scene-section">
         <div class="scene-selector">
           <label for="scene-selector" class="scene-label">当前场景:</label>
-          <select id="scene-selector" name="scene-selector" class="scene-dropdown" ${this.currentSceneInfo.isLoading ? 'disabled' : ''}>
-            ${sceneOptions}
-          </select>
-          <span class="loading-indicator">加载中...</span>
+          <div>
+			  <select id="scene-selector" name="scene-selector" class="scene-dropdown" ${this.currentSceneInfo.isLoading ? 'disabled' : ''}>
+				${sceneOptions}
+			  </select>
+			  <span class="loading-indicator">加载中...</span>
+		  </div>
         </div>
       </div>
       <div class="status-section">
@@ -1273,6 +1169,7 @@ export class PerformancePanel {
       
       .babylon-performance-panel .scene-selector {
         display: flex;
+        justify-content: space-between;
         align-items: center;
         gap: 8px;
       }
@@ -1284,7 +1181,6 @@ export class PerformancePanel {
       }
       
       .babylon-performance-panel .scene-dropdown {
-        flex: 1;
         padding: 2px 6px;
         background: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
         border: 1px solid ${isDark ? '#555' : '#aaa'};

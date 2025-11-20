@@ -3,6 +3,7 @@ import { PerformanceMonitor, PerformancePanel } from './debug/Performance.ts';
 import { EnvConfig } from './configs';
 import { SCENE_NAMES } from '@/entry/constants.ts';
 import { diContainer } from '@/global/DIContainer.ts';
+import utils from '@/utils';
 
 const App = () => {
 	let app: GameApp | undefined;
@@ -12,8 +13,9 @@ const App = () => {
 	// 启动应用
 	const start = async () => {
 		const isDebugMode = EnvConfig.DEBUG;
+		const demoSceneName = utils.url_query.get('scene');
 		app = new GameApp('game-canvas', isDebugMode ? 'debug' : 'high');
-		await app.initialize(SCENE_NAMES.PhysicsDemoScene, { enablePhysics: true });
+		await app.initialize(demoSceneName || SCENE_NAMES.PhysicsDemoScene, { enablePhysics: true });
 
 		if (isDebugMode) {
 			diContainer.register('SceneManager', app.sceneManager);

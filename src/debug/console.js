@@ -54,7 +54,7 @@
 		logLoading: function logLoading(...args) {
 			try {
 				const prefix = '⏳ Loading';
-				const style = 'color: #888;';
+				const style = 'color: #000;';
 				this.log(`%c${prefix}`, style + _style, ...args);
 			} catch (e) {
 				console.log('Loading:', ...args);
