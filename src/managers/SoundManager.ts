@@ -5,7 +5,7 @@ import { INJECT_TOKENS } from '@/entry/constants.ts';
 export type SoundCategory = 'bgm' | 'sfx';
 
 export class SoundManager {
-	@Inject(INJECT_TOKENS.MineScene)
+	@Inject(INJECT_TOKENS.CurrentScene)
 	private readonly scene!: Scene;
 
 	private categories: Record<SoundCategory, Map<string, Sound>> = {

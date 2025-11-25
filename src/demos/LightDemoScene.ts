@@ -1,16 +1,14 @@
-import { Scene, HemisphericLight, PointLight, Vector3, MeshBuilder, StandardMaterial, Color3 } from '@babylonjs/core';
+import { Scene, HemisphericLight, PointLight, Vector3, MeshBuilder, StandardMaterial, Color3, ToHex } from '@babylonjs/core';
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
-import { CreativeCamera, SurvivalCamera } from '@/player/PlayerCamera.ts';
-import { diContainer } from '@/global/DIContainer.ts';
-import { INJECT_TOKENS } from '@/entry/constants.ts';
+import { CreativeCamera } from '@/player/PlayerCamera.ts';
 
 /**
  * 光照演示场景
  */
 class LightDemoScene extends DemoSceneClass {
-	async create() {
+	async *create() {
 		const scene = new Scene(this.engine);
-		diContainer.register(INJECT_TOKENS.MineScene, scene);
+		yield scene;
 		const camera = new CreativeCamera(new Vector3(0, 5, -10));
 
 		// 添加环境光
@@ -49,8 +47,6 @@ class LightDemoScene extends DemoSceneClass {
 		const groundMaterial = new StandardMaterial('groundMaterial', scene);
 		groundMaterial.diffuseColor = Color3.Gray();
 		ground.material = groundMaterial;
-
-		return scene;
 	}
 }
 

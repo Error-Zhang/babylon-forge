@@ -30,7 +30,7 @@ const EPSILON = 1e-6;
  * @param value
  * @param normal
  */
-const correct_float = (value: number, normal: number): number => {
+const correct = (value: number, normal: number): number => {
 	if (normal > 0) {
 		return Math.floor(value + EPSILON) - 1;
 	} else if (normal < 0) {
@@ -44,7 +44,7 @@ const correct_float = (value: number, normal: number): number => {
  * @param compressed
  * @param decode
  */
-const decompress_rle = (compressed: number[], decode?: (value: number, index: number) => number): Uint16Array | Uint8Array => {
+const decompressRLE = (compressed: number[], decode?: (value: number, index: number) => number): Uint16Array | Uint8Array => {
 	// 先计算解压后数组的长度
 	let length = 0;
 	for (let i = 1; i < compressed.length; i += 2) {
@@ -64,7 +64,7 @@ const decompress_rle = (compressed: number[], decode?: (value: number, index: nu
 
 	return result;
 };
-const url_query = {
+const urlQuery = {
 	/** 获取 URL 参数（自动解析 JSON / number / boolean） */
 	get(key: string) {
 		const params = new URLSearchParams(window.location.search);
@@ -139,9 +139,9 @@ const utils = {
 	debounce,
 	throttle,
 	sleep,
-	decompress_rle,
-	correct_float,
-	url_query,
+	decompressRLE,
+	correct,
+	urlQuery,
 };
 
 export default utils;

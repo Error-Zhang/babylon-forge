@@ -35,7 +35,7 @@
 			try {
 				const prefix = '✖ Error';
 				const style = 'color: #e33; ';
-				this.error(`%c${prefix}`, style + _style, ...args);
+				console.log(`%c${prefix}`, style + _style, ...args);
 			} catch (e) {
 				console.error('Error:', ...args);
 			}

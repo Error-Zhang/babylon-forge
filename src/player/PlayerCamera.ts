@@ -6,7 +6,7 @@ import { LogReturn, Inject } from '@/global/Decorators.ts';
 import utils from '@/utils';
 
 export abstract class BasePlayerCamera {
-	@Inject(INJECT_TOKENS.MineScene)
+	@Inject(INJECT_TOKENS.CurrentScene)
 	protected scene!: Scene;
 	protected readonly camera: FreeCamera;
 	protected readonly inputSystem: PlayerInputSystem;
@@ -108,7 +108,7 @@ export abstract class BasePlayerCamera {
 		this.inputSystem.onActionUpdate('moveRight', () => this.moveRight());
 	}
 
-	@LogReturn(false)
+	@LogReturn({ wrapperFn: utils.throttle }, true)
 	protected get dtPercent() {
 		return this.scene.getEngine().getDeltaTime() / 16.67;
 	}

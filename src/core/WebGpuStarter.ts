@@ -1,7 +1,6 @@
 import { type EngineCapabilities, WebGPUEngine } from '@babylonjs/core';
 import HavokPhysics from '@babylonjs/havok';
 import { diContainer } from '@/global/DIContainer.ts';
-import { INJECT_TOKENS } from '@/entry/constants.ts';
 
 /**
  * WebGPU引擎配置选项
@@ -198,7 +197,7 @@ class WebGPUEngineCreator {
 }
 
 export type EngineMode = 'debug' | 'high' | 'custom';
-export type InitConfig = { enablePhysics?: boolean };
+export type InitConfig = { enablePhysics?: boolean | number };
 abstract class WebGPUApplication {
 	public engine!: WebGPUEngine;
 	protected canvas!: HTMLCanvasElement;
@@ -223,7 +222,7 @@ abstract class WebGPUApplication {
 	async initialize(scene: string, config?: InitConfig): Promise<void> {
 		try {
 			this.engine = await this.switchEngine();
-			diContainer.register(INJECT_TOKENS.Engine, this.engine);
+			diContainer.register(WebGPUEngine, this.engine);
 
 			this.canvas = this.engine.getRenderingCanvas() as HTMLCanvasElement;
 
@@ -239,6 +238,7 @@ abstract class WebGPUApplication {
 			this.onEngineInitialized();
 		} catch (error) {
 			this.onInitializationError?.(error as Error);
+			console.logError(error);
 			throw new Error('WebGPU应用程序初始化失败:' + error);
 		}
 	}

@@ -9,22 +9,16 @@ import {
 	HavokPlugin,
 	HingeConstraint,
 } from '@babylonjs/core';
-import '@babylonjs/loaders';
 import { SurvivalCamera } from '../player/PlayerCamera.js';
-import { INJECT_TOKENS } from '../entry/constants.ts';
-import { diContainer } from '@/global/DIContainer.ts';
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
-
+import '@babylonjs/loaders';
 /**
  * 物理演示场景
  */
 class PhysicsDemoScene extends DemoSceneClass {
-	async create() {
+	async *create() {
 		const scene = new Scene(this.engine);
-		diContainer.register(INJECT_TOKENS.MineScene, scene);
-		// Havok physics
-		const havok = new HavokPlugin(true);
-		scene.enablePhysics(new Vector3(0, -9.8, 0), havok);
+		yield scene;
 		// Camera
 		const camera = new SurvivalCamera(new Vector3(3, 0.3, -8));
 
@@ -40,8 +34,6 @@ class PhysicsDemoScene extends DemoSceneClass {
 			scene
 		);
 		this.setupEnvironment(scene);
-
-		return scene;
 	}
 
 	setupEnvironment(scene: any) {

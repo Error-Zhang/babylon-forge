@@ -2,6 +2,7 @@ import { WebGPUEngine, Scene, type Nullable } from '@babylonjs/core';
 import { type Ref, useRef, useWatch } from '@/core/reactivity';
 import { Inject } from '@/global/Decorators.ts';
 import { SceneManager } from '@/managers/SceneManager.ts';
+import { INJECT_TOKENS } from '@/entry/constants.ts';
 
 export interface BabylonPerformanceMetrics {
 	// 基础性能
@@ -43,13 +44,13 @@ export interface BabylonMonitorConfig {
 }
 
 export class PerformanceMonitor {
-	@Inject('Engine')
+	@Inject(WebGPUEngine)
 	private readonly engine!: WebGPUEngine;
 
-	@Inject('MineScene')
+	@Inject(INJECT_TOKENS.CurrentScene)
 	private scene!: Scene;
 
-	@Inject('SceneManager')
+	@Inject(SceneManager)
 	private readonly sceneManager!: SceneManager;
 
 	private config: Required<BabylonMonitorConfig>;
@@ -304,8 +305,8 @@ export class PerformancePanel {
 		warningMeshCount: 400,
 	};
 
-	constructor(monitor: PerformanceMonitor, config: BabylonPanelConfig = {}) {
-		this.monitor = monitor;
+	constructor(config: BabylonPanelConfig = {}) {
+		this.monitor = new PerformanceMonitor();
 		this.config = {
 			visible: config.visible ?? false,
 			position: config.position || 'top-right',
@@ -477,7 +478,7 @@ export class PerformancePanel {
 
 		const baseStyles = `
 	      position: fixed;
-	      z-index: 10000;
+	      z-index: 1;
 	      font-family: 'Consolas', 'Monaco', monospace;
 	      font-size: 11px;
 	      background: ${isDark ? 'rgba(0, 0, 0, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
@@ -1164,7 +1165,7 @@ export class PerformancePanel {
       
       .babylon-performance-panel .scene-section {
         margin: 8px 12px;
-        background: ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+        background: ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0)'};
       }
       
       .babylon-performance-panel .scene-selector {
