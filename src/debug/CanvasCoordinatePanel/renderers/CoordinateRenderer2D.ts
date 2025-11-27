@@ -1,4 +1,4 @@
-import { type CoordinateSystemInfo } from '../CoordinateSystemMonitor';
+import { type CoordinateSystemInfo } from '../CanvasCoordinateMonitor.ts';
 
 /**
  * 2D坐标系渲染器配置
@@ -30,12 +30,12 @@ export class CoordinateRenderer2D {
 	private centerX: number;
 	private centerY: number;
 	private canvas: HTMLCanvasElement;
-	
+
 	// 回到原点按钮相关
 	private resetButtonArea: { x: number; y: number; width: number; height: number } | null = null;
 	private isHoveringResetButton: boolean = false;
 	private isHoveringCanvas: boolean = false;
-	
+
 	// 摄像机坐标显示
 	private cameraCoordinates: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
 
@@ -91,7 +91,7 @@ export class CoordinateRenderer2D {
 
 		// 绘制回到原点按钮
 		this.drawResetButton();
-		
+
 		// 绘制当前坐标
 		this.drawCurrentCoordinates();
 	}
@@ -228,22 +228,22 @@ export class CoordinateRenderer2D {
 			const originCoords = `(${this.config.origin.x}, ${this.config.origin.y}, ${this.config.origin.z})`;
 			this.ctx.font = '10px Arial';
 			this.ctx.textAlign = 'left';
-			
+
 			// 计算坐标文本位置（在O标签旁边）
 			const coordX = oLabelX + 20;
 			const coordY = oLabelY;
-			
+
 			// 绘制坐标文本背景
 			const textMetrics = this.ctx.measureText(originCoords);
 			const textWidth = textMetrics.width + 4;
 			const textHeight = 12;
 			this.ctx.fillStyle = isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)';
 			this.ctx.fillRect(coordX - 2, coordY - 8, textWidth, textHeight);
-			
+
 			// 绘制坐标文本
 			this.ctx.fillStyle = isDark ? '#ffffff' : '#000000';
 			this.ctx.fillText(originCoords, coordX, coordY);
-			
+
 			// 恢复字体和对齐方式
 			this.ctx.font = '12px Arial';
 			this.ctx.textAlign = 'center';
@@ -342,7 +342,7 @@ export class CoordinateRenderer2D {
 	 */
 	private drawDistanceLineToOrigin(cameraX: number, cameraZ: number, originX: number, originY: number, camera: any, displayScale: number) {
 		const isDark = this.config.theme === 'dark';
-		
+
 		// 绘制距离线
 		this.ctx.strokeStyle = isDark ? 'rgba(255, 255, 0, 0.6)' : 'rgba(255, 165, 0, 0.6)';
 		this.ctx.lineWidth = 1;
@@ -356,8 +356,8 @@ export class CoordinateRenderer2D {
 		// 计算实际距离（3D空间中相对于配置原点的距离）
 		const distance = Math.sqrt(
 			(camera.position.x - this.config.origin.x) * (camera.position.x - this.config.origin.x) +
-			(camera.position.y - this.config.origin.y) * (camera.position.y - this.config.origin.y) +
-			(camera.position.z - this.config.origin.z) * (camera.position.z - this.config.origin.z)
+				(camera.position.y - this.config.origin.y) * (camera.position.y - this.config.origin.y) +
+				(camera.position.z - this.config.origin.z) * (camera.position.z - this.config.origin.z)
 		);
 
 		// 在距离线中点显示距离文本
@@ -419,91 +419,91 @@ export class CoordinateRenderer2D {
 		const isDark = this.config.theme === 'dark';
 		const buttonSize = 40;
 		const margin = 15;
-		
+
 		// 按钮位置（左下角）
 		const buttonX = margin;
 		const buttonY = this.config.height - buttonSize - margin;
-		
+
 		// 记录按钮区域用于点击检测
 		this.resetButtonArea = {
 			x: buttonX,
 			y: buttonY,
 			width: buttonSize,
-			height: buttonSize
+			height: buttonSize,
 		};
-		
+
 		// 只在悬浮Canvas且原点不在中心位置时显示按钮
-		const isOriginAtCenter = (this.config.panOffsetX === 0 && this.config.panOffsetY === 0);
+		const isOriginAtCenter = this.config.panOffsetX === 0 && this.config.panOffsetY === 0;
 		if (!this.isHoveringCanvas || isOriginAtCenter) return;
-		
+
 		const centerX = buttonX + buttonSize / 2;
 		const centerY = buttonY + buttonSize / 2;
-		
+
 		// 绘制悬浮背景（圆形，半透明）
 		this.ctx.fillStyle = isDark ? 'rgba(40, 40, 50, 0.85)' : 'rgba(255, 255, 255, 0.85)';
 		this.ctx.beginPath();
 		this.ctx.arc(centerX, centerY, buttonSize / 2, 0, Math.PI * 2);
 		this.ctx.fill();
-		
+
 		// 绘制边框
 		this.ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.2)';
 		this.ctx.lineWidth = 1;
 		this.ctx.beginPath();
 		this.ctx.arc(centerX, centerY, buttonSize / 2, 0, Math.PI * 2);
 		this.ctx.stroke();
-		
+
 		// 绘制"回到原点"图标（房子形状）
 		this.ctx.strokeStyle = isDark ? '#ffffff' : '#333333';
 		this.ctx.fillStyle = isDark ? '#ffffff' : '#333333';
 		this.ctx.lineWidth = 2;
-		
+
 		// 绘制房子底部
 		const houseSize = 12;
-		this.ctx.strokeRect(centerX - houseSize/2, centerY - 2, houseSize, houseSize * 0.7);
-		
+		this.ctx.strokeRect(centerX - houseSize / 2, centerY - 2, houseSize, houseSize * 0.7);
+
 		// 绘制房子屋顶
 		this.ctx.beginPath();
-		this.ctx.moveTo(centerX - houseSize/2, centerY - 2);
-		this.ctx.lineTo(centerX, centerY - houseSize/2);
-		this.ctx.lineTo(centerX + houseSize/2, centerY - 2);
+		this.ctx.moveTo(centerX - houseSize / 2, centerY - 2);
+		this.ctx.lineTo(centerX, centerY - houseSize / 2);
+		this.ctx.lineTo(centerX + houseSize / 2, centerY - 2);
 		this.ctx.stroke();
-		
+
 		// 绘制门
 		const doorWidth = 3;
 		const doorHeight = 6;
-		this.ctx.fillRect(centerX - doorWidth/2, centerY + houseSize * 0.7 - 2 - doorHeight, doorWidth, doorHeight);
+		this.ctx.fillRect(centerX - doorWidth / 2, centerY + houseSize * 0.7 - 2 - doorHeight, doorWidth, doorHeight);
 	}
-	
+
 	/**
 	 * 检查点击是否在回到原点按钮上
 	 */
 	public isClickOnResetButton(x: number, y: number): boolean {
 		if (!this.resetButtonArea) return false;
-		
+
 		// 检查是否在圆形按钮区域内
 		const centerX = this.resetButtonArea.x + this.resetButtonArea.width / 2;
 		const centerY = this.resetButtonArea.y + this.resetButtonArea.height / 2;
 		const radius = this.resetButtonArea.width / 2;
 		const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-		
+
 		return distance <= radius;
 	}
-	
+
 	/**
 	 * 检查鼠标是否悬浮在回到原点按钮上
 	 */
 	public checkHoveringResetButton(x: number, y: number): boolean {
 		if (!this.resetButtonArea) return false;
-		
+
 		// 检查是否在圆形按钮区域内
 		const centerX = this.resetButtonArea.x + this.resetButtonArea.width / 2;
 		const centerY = this.resetButtonArea.y + this.resetButtonArea.height / 2;
 		const radius = this.resetButtonArea.width / 2;
 		const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-		
+
 		return distance <= radius;
 	}
-	
+
 	/**
 	 * 设置按钮悬浮状态
 	 */
@@ -512,7 +512,7 @@ export class CoordinateRenderer2D {
 			this.isHoveringResetButton = isHovering;
 		}
 	}
-	
+
 	/**
 	 * 设置Canvas悬浮状态
 	 */
@@ -524,28 +524,28 @@ export class CoordinateRenderer2D {
 			this.canvas.dispatchEvent(event);
 		}
 	}
-	
+
 	/**
 	 * 获取按钮悬浮状态
 	 */
 	public getHoveringResetButton(): boolean {
 		return this.isHoveringResetButton;
 	}
-	
+
 	/**
 	 * 获取Canvas悬浮状态
 	 */
 	public getHoveringCanvas(): boolean {
 		return this.isHoveringCanvas;
 	}
-	
+
 	/**
 	 * 设置摄像机坐标
 	 */
 	public setCameraCoordinates(x: number, y: number, z: number): void {
 		this.cameraCoordinates = { x, y, z };
 	}
-	
+
 	/**
 	 * 绘制摄像机坐标显示
 	 */
@@ -553,29 +553,29 @@ export class CoordinateRenderer2D {
 		const isDark = this.config.theme === 'dark';
 		const margin = 10;
 		const padding = 4;
-		
+
 		// 设置字体 - 缩小字体
 		this.ctx.font = '10px monospace';
 		this.ctx.textAlign = 'right';
 		this.ctx.textBaseline = 'bottom';
-		
+
 		// 格式化坐标文本 - 去掉Camera文字
 		const coordText = `X: ${this.cameraCoordinates.x.toFixed(2)}, Z: ${this.cameraCoordinates.z.toFixed(2)}`;
-		
+
 		// 测量文本尺寸
 		const textMetrics = this.ctx.measureText(coordText);
 		const textWidth = textMetrics.width;
 		const textHeight = 10; // 字体大小
-		
+
 		// 计算位置（右下角）
 		const textX = this.config.width - margin - padding;
 		const textY = this.config.height - margin - padding;
-		
+
 		// 绘制坐标文本（无背景）
 		this.ctx.fillStyle = isDark ? '#ffffff' : '#333333';
 		this.ctx.fillText(coordText, textX, textY);
 	}
-	
+
 	/**
 	 * 重置到原点
 	 */

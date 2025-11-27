@@ -1,4 +1,4 @@
-import { type CoordinateSystemInfo } from '../CoordinateSystemMonitor';
+import { type CoordinateSystemInfo } from '../CanvasCoordinateMonitor.ts';
 
 /**
  * 3D坐标系渲染器配置
@@ -54,22 +54,22 @@ export class CoordinateRenderer3D {
 		this.ctx = ctx;
 		this.canvas = ctx.canvas;
 		this.config = {
-				width: config.width,
-				height: config.height,
-				showGrid: config.showGrid ?? true,
-				showAxes: config.showAxes ?? true,
-				gridSize: config.gridSize ?? 20,
-				axisLength: config.axisLength ?? 80,
-				scale: config.scale ?? 1,
-				rotationX: config.rotationX ?? 0.3, // 绕X轴旋转角度
-				rotationY: config.rotationY ?? 0.5, // 绕Y轴旋转角度
-				perspective: config.perspective ?? 300, // 透视距离
-				theme: config.theme ?? 'dark',
-				invertAxes: config.invertAxes ?? false,
-				showDistanceLine: config.showDistanceLine ?? false,
-				showOriginCoordinates: config.showOriginCoordinates ?? false,
-				origin: config.origin ?? { x: 0, y: 0, z: 0 },
-			};
+			width: config.width,
+			height: config.height,
+			showGrid: config.showGrid ?? true,
+			showAxes: config.showAxes ?? true,
+			gridSize: config.gridSize ?? 20,
+			axisLength: config.axisLength ?? 80,
+			scale: config.scale ?? 1,
+			rotationX: config.rotationX ?? 0.3, // 绕X轴旋转角度
+			rotationY: config.rotationY ?? 0.5, // 绕Y轴旋转角度
+			perspective: config.perspective ?? 300, // 透视距离
+			theme: config.theme ?? 'dark',
+			invertAxes: config.invertAxes ?? false,
+			showDistanceLine: config.showDistanceLine ?? false,
+			showOriginCoordinates: config.showOriginCoordinates ?? false,
+			origin: config.origin ?? { x: 0, y: 0, z: 0 },
+		};
 
 		this.centerX = this.config.width / 2;
 		this.centerY = this.config.height / 2;
@@ -215,8 +215,8 @@ export class CoordinateRenderer3D {
 		// 计算实际距离（3D空间中相对于配置原点的距离）
 		const distance = Math.sqrt(
 			(camera.position.x - this.config.origin.x) * (camera.position.x - this.config.origin.x) +
-			(camera.position.y - this.config.origin.y) * (camera.position.y - this.config.origin.y) +
-			(camera.position.z - this.config.origin.z) * (camera.position.z - this.config.origin.z)
+				(camera.position.y - this.config.origin.y) * (camera.position.y - this.config.origin.y) +
+				(camera.position.z - this.config.origin.z) * (camera.position.z - this.config.origin.z)
 		);
 
 		// 在距离线中点显示距离文本
@@ -345,7 +345,7 @@ export class CoordinateRenderer3D {
 		// X轴标签
 		const xLabel = this.project3D(this.config.origin.x + (axisLength + 10) * xDirection, this.config.origin.y, this.config.origin.z);
 		this.drawAxisLabel('X', xLabel.x, xLabel.y + 4, 'red', isDark);
-		this.axisClickAreas.set('X', { x: xLabel.x - 8, y: xLabel.y -8, width: 24, height: 24 });
+		this.axisClickAreas.set('X', { x: xLabel.x - 8, y: xLabel.y - 8, width: 24, height: 24 });
 
 		// Y轴标签
 		const yLabel = this.project3D(this.config.origin.x, this.config.origin.y + (axisLength + 10) * yDirection, this.config.origin.z);
@@ -355,38 +355,38 @@ export class CoordinateRenderer3D {
 		// Z轴标签 - 稍微往下调整
 		const zLabel = this.project3D(this.config.origin.x, this.config.origin.y, this.config.origin.z + (axisLength + 10) * zDirection);
 		this.drawAxisLabel('Z', zLabel.x, zLabel.y + 4, 'blue', isDark);
-		this.axisClickAreas.set('Z', { x: zLabel.x - 8, y: zLabel.y -8, width: 24, height: 24 });
+		this.axisClickAreas.set('Z', { x: zLabel.x - 8, y: zLabel.y - 8, width: 24, height: 24 });
 
 		// 原点标签
-        const origin = this.project3D(this.config.origin.x - 10, this.config.origin.y - 10, this.config.origin.z);
-        this.drawAxisLabel('O', origin.x, origin.y, '#666', isDark);
-        this.axisClickAreas.set('O', { x: origin.x - 12, y: origin.y - 12, width: 24, height: 24 });
+		const origin = this.project3D(this.config.origin.x - 10, this.config.origin.y - 10, this.config.origin.z);
+		this.drawAxisLabel('O', origin.x, origin.y, '#666', isDark);
+		this.axisClickAreas.set('O', { x: origin.x - 12, y: origin.y - 12, width: 24, height: 24 });
 
-        // 绘制原点坐标（如果启用）
-        if (this.config.showOriginCoordinates) {
-            const originCoords = `(${this.config.origin.x}, ${this.config.origin.y}, ${this.config.origin.z})`;
-            this.ctx.font = '10px Arial';
-            this.ctx.textAlign = 'left';
-            
-            // 计算坐标文本位置（在O标签旁边）
-            const coordX = origin.x + 15;
-            const coordY = origin.y + 3;
-            
-            // 绘制坐标文本背景
-            const textMetrics = this.ctx.measureText(originCoords);
-            const textWidth = textMetrics.width + 4;
-            const textHeight = 12;
-            this.ctx.fillStyle = isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)';
-            this.ctx.fillRect(coordX - 2, coordY - 8, textWidth, textHeight);
-            
-            // 绘制坐标文本
-            this.ctx.fillStyle = isDark ? '#ffffff' : '#000000';
-            this.ctx.fillText(originCoords, coordX, coordY);
-            
-            // 恢复字体和对齐方式
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-        }
+		// 绘制原点坐标（如果启用）
+		if (this.config.showOriginCoordinates) {
+			const originCoords = `(${this.config.origin.x}, ${this.config.origin.y}, ${this.config.origin.z})`;
+			this.ctx.font = '10px Arial';
+			this.ctx.textAlign = 'left';
+
+			// 计算坐标文本位置（在O标签旁边）
+			const coordX = origin.x + 15;
+			const coordY = origin.y + 3;
+
+			// 绘制坐标文本背景
+			const textMetrics = this.ctx.measureText(originCoords);
+			const textWidth = textMetrics.width + 4;
+			const textHeight = 12;
+			this.ctx.fillStyle = isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)';
+			this.ctx.fillRect(coordX - 2, coordY - 8, textWidth, textHeight);
+
+			// 绘制坐标文本
+			this.ctx.fillStyle = isDark ? '#ffffff' : '#000000';
+			this.ctx.fillText(originCoords, coordX, coordY);
+
+			// 恢复字体和对齐方式
+			this.ctx.font = '12px Arial';
+			this.ctx.textAlign = 'center';
+		}
 	}
 
 	/**
@@ -779,28 +779,28 @@ export class CoordinateRenderer3D {
 	}
 
 	/**
-     * 处理轴标签点击
-     */
-    private handleAxisClick(e: MouseEvent) {
-        const rect = this.canvas.getBoundingClientRect();
-        // 考虑Canvas缩放比例进行坐标转换
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+	 * 处理轴标签点击
+	 */
+	private handleAxisClick(e: MouseEvent) {
+		const rect = this.canvas.getBoundingClientRect();
+		// 考虑Canvas缩放比例进行坐标转换
+		const scaleX = this.canvas.width / rect.width;
+		const scaleY = this.canvas.height / rect.height;
+		const x = (e.clientX - rect.left) * scaleX;
+		const y = (e.clientY - rect.top) * scaleY;
 
-        // 检查是否点击了轴标签
-        for (const [axis, area] of this.axisClickAreas) {
-            if (x >= area.x && x <= area.x + area.width && y >= area.y && y <= area.y + area.height) {
-                this.setPresetView(axis);
+		// 检查是否点击了轴标签
+		for (const [axis, area] of this.axisClickAreas) {
+			if (x >= area.x && x <= area.x + area.width && y >= area.y && y <= area.y + area.height) {
+				this.setPresetView(axis);
 
-                // 触发自定义事件，通知面板
-                const event = new CustomEvent('axis-clicked', { detail: { axis } });
-                this.canvas.dispatchEvent(event);
-                break;
-            }
-        }
-    }
+				// 触发自定义事件，通知面板
+				const event = new CustomEvent('axis-clicked', { detail: { axis } });
+				this.canvas.dispatchEvent(event);
+				break;
+			}
+		}
+	}
 
 	/**
 	 * 检查点击位置是否在轴标签区域内

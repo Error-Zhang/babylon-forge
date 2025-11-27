@@ -9,7 +9,7 @@ import {
 	HavokPlugin,
 	HingeConstraint,
 } from '@babylonjs/core';
-import { SurvivalCamera } from '../player/PlayerCamera.js';
+import { SurvivalCamera } from './player/PlayerCamera.js';
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
 import '@babylonjs/loaders';
 /**

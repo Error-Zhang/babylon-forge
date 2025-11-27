@@ -30,8 +30,7 @@ export interface CoordinateSystemInfo {
 /**
  * 坐标系监控器配置
  */
-export interface CoordinateMonitorConfig {
-	updateInterval?: number;
+export interface CanvasCoordinateMonitorConfig {
 	precision?: number; // 小数点精度
 }
 
@@ -39,22 +38,18 @@ export interface CoordinateMonitorConfig {
  * 坐标系监控器类
  * 用于监控Babylon.js的坐标系信息和摄像机位置
  */
-export class CoordinateSystemMonitor {
-	@Inject(WebGPUEngine)
-	private readonly engine!: WebGPUEngine;
-
+export class CanvasCoordinateMonitor {
 	@Inject(INJECT_TOKENS.CurrentScene)
 	private scene!: Scene;
 
 	@Inject(SceneManager)
 	public readonly sceneManager!: SceneManager;
 
-	private config: Required<CoordinateMonitorConfig>;
+	private config: Required<CanvasCoordinateMonitorConfig>;
 	private isRunning: boolean = false;
 
-	constructor(config: CoordinateMonitorConfig = {}) {
+	constructor(config: CanvasCoordinateMonitorConfig = {}) {
 		this.config = {
-			updateInterval: config.updateInterval || 100,
 			precision: config.precision || 3,
 		};
 	}

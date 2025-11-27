@@ -1,6 +1,6 @@
 import { Scene, HemisphericLight, PointLight, Vector3, MeshBuilder, StandardMaterial, Color3, ToHex } from '@babylonjs/core';
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
-import { CreativeCamera } from '@/player/PlayerCamera.ts';
+import { CreativeCamera } from '@/demos/player/PlayerCamera';
 
 /**
  * 光照演示场景

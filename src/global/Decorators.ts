@@ -4,9 +4,6 @@ import { ENV_CONFIG } from '@/configs';
 
 export function Inject<T>(token: DIToken<T>) {
 	return function (value: undefined, context: ClassFieldDecoratorContext) {
-		if (token === INJECT_TOKENS.CurrentScene && !diContainer.has(token)) {
-			console.logError(`please use '${INJECT_TOKENS.CurrentScene}' Inject in SceneComponent 'onCreated' hook or use 'yield scene' before. `);
-		}
 		return () => diContainer.get(token) as any;
 	};
 }
@@ -18,19 +15,14 @@ export function LogReturn(
 		wrapperFn?: Function; // 节流/防抖函数
 		wait?: number;
 	},
-	off: boolean = !ENV_CONFIG.DEBUG
+	on: boolean = ENV_CONFIG.DEBUG
 ) {
 	const { head = 'LogReturn:', color = '#3f51b5', wrapperFn, wait = 1000 } = options ?? {};
 
 	return function (orgFn: Function, context: ClassMethodDecoratorContext | ClassGetterDecoratorContext) {
-		const logFn = !off
+		const logFn = on
 			? function (value: any) {
-					console.log(
-						`%c[${head}${context.name.toString()}]%c`,
-						`color: #fff; background:${color}; padding:2px 4px; border-radius:4px;`,
-						`color:${color}; font-weight:bold`,
-						value
-					);
+					console.logDebug(`[${head}${context.name.toString()}]`, value);
 				}
 			: () => {};
 
@@ -43,3 +35,4 @@ export function LogReturn(
 		};
 	};
 }
+export { FieldMonitor } from './FieldMonitorDecorator';

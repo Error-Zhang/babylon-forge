@@ -8,6 +8,14 @@ class DIContainer {
 
 	private services = new Map<any, any>();
 
+	replace<T>(token: DIToken<T>, instance: T) {
+		this.services.set(token, instance);
+	}
+
+	remove<T>(token: DIToken<T>) {
+		this.services.delete(token);
+	}
+
 	register<T>(token: DIToken<T>, instance: T) {
 		const name = typeof token === 'string' ? token : token.name;
 		if (this.services.has(token)) {

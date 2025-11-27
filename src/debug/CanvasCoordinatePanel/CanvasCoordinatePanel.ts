@@ -1,12 +1,19 @@
-import { BasePanelWrapper, type BasePanelConfig } from './BasePanelWrapper';
-import { CoordinateSystemMonitor, type CoordinateSystemInfo } from './CoordinateSystemMonitor';
-import { CoordinateRenderer2D } from './renderers/CoordinateRenderer2D';
-import { CoordinateRenderer3D } from './renderers/CoordinateRenderer3D';
+import {
+	BasePanelWrapper,
+	type BasePanelConfig,
+	type BasePanelConfigRequiredProps,
+	type BasePanelExposeKeys,
+} from '../components/BasePanelWrapper.ts';
+import { CanvasCoordinateMonitor, type CanvasCoordinateMonitorConfig, type CoordinateSystemInfo } from './CanvasCoordinateMonitor.ts';
+import { CoordinateRenderer2D } from '@/debug/CanvasCoordinatePanel/renderers/CoordinateRenderer2D.ts';
+import { CoordinateRenderer3D } from '@/debug/CanvasCoordinatePanel/renderers/CoordinateRenderer3D.ts';
 import { useWatch } from '@/core/reactivity';
+import type { OptionalProps } from '@/utils/TypeUtils.ts';
+
 /**
  * Canvas坐标系面板配置接口
  */
-export interface CanvasCoordinatePanelConfig extends BasePanelConfig {
+export interface CanvasCoordinatePanelOptions {
 	canvasHeight?: number;
 	showGrid?: boolean;
 	showAxes?: boolean;
@@ -14,25 +21,44 @@ export interface CanvasCoordinatePanelConfig extends BasePanelConfig {
 	defaultView?: '2d' | '3d';
 	gridSize?: number;
 	axisLength?: number;
-	toggleKey?: string; // 切换显示/隐藏的快捷键
 	scale?: number; // 缩放比例
-	rotationX?: number; // 3D视图X轴旋转角度
-	rotationY?: number; // 3D视图Y轴旋转角度
-	perspective?: number; // 3D视图透视距离
 	invertAxes?: boolean; // 反转坐标轴
 	showDistanceLine?: boolean; // 显示到原点距离线
 	showOriginCoordinates?: boolean; // 显示原点坐标
 	origin?: { x: number; y: number; z: number }; // 坐标原点位置
-	pipSize?: number; // 画中画窗口大小
+	pipSize?: number; // 画中画窗口大小(180~500)
 }
+
+export type CanvasCoordinatePanelConfig = BasePanelExposeKeys &
+	Partial<BasePanelConfig> &
+	CanvasCoordinatePanelOptions &
+	CanvasCoordinateMonitorConfig;
+
+const defaultConfig: Required<OptionalProps<CanvasCoordinatePanelOptions> & BasePanelConfigRequiredProps> = {
+	title: '坐标系可视化',
+	width: '350px',
+	canvasHeight: 300,
+	showGrid: true,
+	showAxes: true,
+	showCamera: true,
+	defaultView: '2d',
+	gridSize: 20,
+	axisLength: 100,
+	invertAxes: false,
+	scale: 1,
+	showDistanceLine: false,
+	showOriginCoordinates: false,
+	origin: { x: 0, y: 0, z: 0 },
+	pipSize: 280,
+};
 
 /**
  * Canvas坐标系显示面板
  * 使用Canvas可视化显示坐标系和摄像机位置
  */
 export class CanvasCoordinatePanel extends BasePanelWrapper {
-	private monitor!: CoordinateSystemMonitor;
-	private canvasConfig!: Required<CanvasCoordinatePanelConfig>;
+	private monitor!: CanvasCoordinateMonitor;
+	protected config!: Required<BasePanelConfig & CanvasCoordinatePanelOptions>;
 	private canvas!: HTMLCanvasElement;
 	private ctx!: CanvasRenderingContext2D;
 	private renderer2D!: CoordinateRenderer2D;
@@ -53,33 +79,11 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 	private isPipMode: boolean = false;
 	private pipContainer: HTMLElement | null = null;
 	private originalParent: HTMLElement | null = null;
-	private originalPosition: { width: string; height: string; position: string; top: string; left: string; zIndex: string } | null = null;
 
-	constructor(monitor: CoordinateSystemMonitor, config: CanvasCoordinatePanelConfig = {}) {
-		const toggleKey = config.toggleKey || 'F2';
-		const canvasConfig = {
-			...config,
-			title: `${config.title || '坐标系可视化'} (${toggleKey})`,
-			width: config.width || '350px',
-			height: config.height || 'auto',
-			canvasHeight: config.canvasHeight || 300,
-			showGrid: config.showGrid ?? true,
-			showAxes: config.showAxes ?? true,
-			showCamera: config.showCamera ?? true,
-			defaultView: config.defaultView || '2d',
-			gridSize: config.gridSize || 20,
-			axisLength: config.axisLength || 100,
-			toggleKey: toggleKey,
-			invertAxes: config.invertAxes ?? false,
-			scale: config.scale || 1,
-			showDistanceLine: config.showDistanceLine ?? false,
-			showOriginCoordinates: config.showOriginCoordinates ?? false,
-			origin: config.origin || { x: 0, y: 0, z: 0 },
-			pipSize: config.pipSize || 280,
-		};
+	constructor(config: CanvasCoordinatePanelConfig) {
+		const canvasConfig: any = Object.assign(defaultConfig, config);
 		super(canvasConfig);
-		this.monitor = monitor;
-		this.canvasConfig = canvasConfig as any;
+		this.monitor = new CanvasCoordinateMonitor(config);
 		this.currentView = canvasConfig.defaultView;
 		useWatch(this.monitor.sceneManager.isLoadingSceneRef, (newValue) => {
 			if (newValue) {
@@ -103,17 +107,14 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		this.setupViewControls();
 	}
 
-	/**
-	 * 获取切换快捷键
-	 */
-	protected getToggleKey(): string {
-		return this.canvasConfig.toggleKey; // 使用配置的切换键
+	private get canvasConfig() {
+		return this.config;
 	}
 
 	/**
 	 * 获取面板内容HTML
 	 */
-	protected getPanelContentHTML(): string {
+	protected override getPanelContentHTML(): string {
 		return `
 			<div class="canvas-coordinate-panel">
 				<div class="view-controls">
@@ -129,19 +130,19 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 								</label>
 							</div>
 							<div class="view-options">
-											<label class="checkbox-label">
-												<input type="checkbox" id="invert-axes">
-												<div>反转坐标轴</div>
-											</label>
-											<label class="checkbox-label">
-												<input type="checkbox" id="show-distance-line">
-												<div>显示到原点距离</div>
-											</label>
-											<label class="checkbox-label">
-												<input type="checkbox" id="show-origin-coordinates">
-												<div>显示原点坐标</div>
-											</label>
-										</div>
+								<label class="checkbox-label">
+									<input type="checkbox" id="invert-axes">
+									<div>反转坐标轴</div>
+								</label>
+								<label class="checkbox-label">
+									<input type="checkbox" id="show-distance-line">
+									<div>显示到原点距离</div>
+								</label>
+								<label class="checkbox-label">
+									<input type="checkbox" id="show-origin-coordinates">
+									<div>显示原点坐标</div>
+								</label>
+							</div>
 							<div class="scale-control-row">
 								<label class="scale-label">
 									<div>比例尺 1:</div>
@@ -151,35 +152,34 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 						</div>
 					</div>
 				<div class="canvas-container">
-							<canvas id="coordinate-canvas" 
-								height="${this.canvasConfig.canvasHeight}">
-							</canvas>
-						<button class="pip-button" id="pip-button" title="画中画模式">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-								<path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
-								<path d="M14 10h5v3h-5z"/>
-							</svg>
-						</button>
-					</div>
+						<canvas id="coordinate-canvas" 
+							height="${this.canvasConfig.canvasHeight}">
+						</canvas>
+					<button class="pip-button" id="pip-button" title="画中画模式">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+							<path d="M14 10h5v3h-5z"/>
+						</svg>
+					</button>
+				</div>
 				<div class="canvas-info">
-							<div class="info-row">
-								<span class="label">视图模式:</span>
-								<span class="value" id="current-view">${this.currentView.toUpperCase()}</span>
-							</div>
-							<div class="info-row">
-								<span class="label">摄像机位置:</span>
-								<span class="value" id="camera-pos">-</span>
-							</div>
-							<div class="info-row">
-								<span class="label">摄像机目标:</span>
-								<span class="value" id="camera-target">-</span>
-							</div>
-							<div class="info-row">
-								<span class="label">到原点距离:</span>
-								<span class="value" id="distance-to-origin">-</span>
-							</div>
-							
-						</div>
+					<div class="info-row">
+						<span class="label">视图模式:</span>
+						<span class="value" id="current-view">${this.currentView.toUpperCase()}</span>
+					</div>
+					<div class="info-row">
+						<span class="label">摄像机位置:</span>
+						<span class="value" id="camera-pos">-</span>
+					</div>
+					<div class="info-row">
+						<span class="label">摄像机目标:</span>
+						<span class="value" id="camera-target">-</span>
+					</div>
+					<div class="info-row">
+						<span class="label">到原点距离:</span>
+						<span class="value" id="distance-to-origin">-</span>
+					</div>
+				</div>
 			</div>
 		`;
 	}
@@ -254,9 +254,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 				}
 			});
 
-			// 初始化比例尺显示
-			this.updateScaleDisplay();
-
 			// 渲染器初始化完成后，如果有数据就立即渲染
 			if (this.coordinateInfo) {
 				this.renderCoordinateSystem();
@@ -265,13 +262,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 				this.renderDefaultCoordinateSystem();
 			}
 		}
-	}
-
-	/**
-	 * 设置渲染器（保留原方法名以兼容）
-	 */
-	private setupRenderers() {
-		// 这个方法现在由setupCanvas中的initializeRenderers替代
 	}
 
 	/**
@@ -387,8 +377,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		this.renderCoordinateSystem();
 		// 重新计算距离显示
 		this.updateInfoDisplay();
-		// 更新比例尺显示
-		this.updateScaleDisplay();
 	}
 
 	/**
@@ -445,22 +433,26 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 	private setupWheelZoom() {
 		if (!this.canvas) return;
 
-		this.canvas.addEventListener('wheel', (e) => {
-			e.preventDefault();
+		this.canvas.addEventListener(
+			'wheel',
+			(e) => {
+				e.preventDefault();
 
-			// 计算缩放因子
-			const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+				// 计算缩放因子
+				const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
 
-			// 更新渲染器的缩放
-			if (this.currentView === '2d' && this.renderer2D) {
-				this.updateRenderer2DScale(zoomFactor);
-			} else if (this.currentView === '3d' && this.renderer3D) {
-				this.updateRenderer3DScale(zoomFactor);
-			}
+				// 更新渲染器的缩放
+				if (this.currentView === '2d' && this.renderer2D) {
+					this.updateRenderer2DScale(zoomFactor);
+				} else if (this.currentView === '3d' && this.renderer3D) {
+					this.updateRenderer3DScale(zoomFactor);
+				}
 
-			// 重新渲染
-			this.renderCoordinateSystem();
-		});
+				// 重新渲染
+				this.renderCoordinateSystem();
+			},
+			{ passive: false }
+		);
 	}
 
 	/**
@@ -473,8 +465,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		const currentConfig = (this.renderer2D as any).config;
 		// 只缩放网格大小，坐标轴长度保持不变
 		currentConfig.gridSize = Math.max(5, Math.min(100, currentConfig.gridSize * zoomFactor));
-		// 更新比例尺
-		this.updateScaleDisplay();
 	}
 
 	/**
@@ -487,15 +477,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		const currentConfig = (this.renderer3D as any).config;
 		// 只缩放网格大小，坐标轴长度保持不变
 		currentConfig.gridSize = Math.max(5, Math.min(100, currentConfig.gridSize * zoomFactor));
-		// 更新比例尺
-		this.updateScaleDisplay();
-	}
-
-	/**
-	 * 更新比例尺显示
-	 */
-	private updateScaleDisplay() {
-		// 比例尺现在直接绘制在Canvas上，不需要更新HTML元素
 	}
 
 	/**
@@ -845,14 +826,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		// 保存原始状态
 		this.originalParent = this.panelElement.parentElement;
 		const computedStyle = window.getComputedStyle(this.panelElement);
-		this.originalPosition = {
-			width: computedStyle.width,
-			height: computedStyle.height,
-			position: computedStyle.position,
-			top: computedStyle.top,
-			left: computedStyle.left,
-			zIndex: computedStyle.zIndex,
-		};
 
 		// 创建画中画容器
 		this.createPipContainer();
@@ -935,7 +908,6 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 
 		this.isPipMode = false;
 		this.originalParent = null;
-		this.originalPosition = null;
 	}
 
 	/**

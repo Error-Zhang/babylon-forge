@@ -4,8 +4,8 @@ import { INJECT_TOKENS, SCENE_MAPPINGS } from '@/entry/constants.ts';
 import { type Ref, useRef } from '@/core/reactivity';
 import { diContainer } from '@/global/DIContainer.ts';
 import type { InitConfig } from '@/core/WebGpuStarter.ts';
-import utils from '@/utils';
 import type { SceneComponent } from '@/components/SceneComponent.ts';
+import chrome from '@/utils/chrome.ts';
 
 export class SceneManager {
 	private sceneMap: Map<string, new () => DemoSceneClass> = new Map();
@@ -87,7 +87,7 @@ export class SceneManager {
 			sceneInstance._attach(this._currentScene);
 
 			diContainer.register(sceneKey, this._currentScene);
-			diContainer.register(INJECT_TOKENS.CurrentScene, this._currentScene);
+			diContainer.replace(INJECT_TOKENS.CurrentScene, this._currentScene);
 
 			let result = await gen.next();
 			while (!result.done) {
@@ -95,13 +95,15 @@ export class SceneManager {
 			}
 
 			this._isSceneCreatedRef.value = true;
-			utils.urlQuery.set('scene', sceneKey);
+			chrome.urlQuery.set('scene', sceneKey);
 
 			console.logSuccess(`'${sceneKey}' has created`);
 			sceneInstance._runCreatedCallbacks();
 
 			this.sceneComponent = sceneInstance;
 			return this._currentScene;
+		} catch (e) {
+			console.logError(e);
 		} finally {
 			if (!this._currentScene) this._isLoadingRef.value = false;
 			this._currentScene!.executeWhenReady(() => {
@@ -133,6 +135,7 @@ export class SceneManager {
 
 	public dispose(): void {
 		this.sceneComponent?.dispose();
+		diContainer.remove(this._currentScene?.metadata?.name);
 		this._isSceneCreatedRef.value = false;
 		this._isSceneMountedRef.value = false;
 	}

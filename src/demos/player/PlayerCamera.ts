@@ -2,7 +2,7 @@ import { FreeCamera, Scene, Vector3 } from '@babylonjs/core';
 import { PlayerInputSystem } from './PlayerInputSystem.ts';
 import { PlayerPhysics } from './PlayerPhysics.ts';
 import { INJECT_TOKENS } from '@/entry/constants.ts';
-import { LogReturn, Inject } from '@/global/Decorators.ts';
+import { LogReturn, Inject, FieldMonitor } from '@/global/Decorators.ts';
 import utils from '@/utils';
 
 export abstract class BasePlayerCamera {
@@ -11,6 +11,8 @@ export abstract class BasePlayerCamera {
 	protected readonly camera: FreeCamera;
 	protected readonly inputSystem: PlayerInputSystem;
 	protected readonly moveValue = Vector3.Zero();
+
+	@FieldMonitor()
 	protected readonly speed: number = 1;
 
 	private cameraState = {
@@ -108,7 +110,7 @@ export abstract class BasePlayerCamera {
 		this.inputSystem.onActionUpdate('moveRight', () => this.moveRight());
 	}
 
-	@LogReturn({ wrapperFn: utils.throttle }, true)
+	@LogReturn({ wrapperFn: utils.throttle }, false)
 	protected get dtPercent() {
 		return this.scene.getEngine().getDeltaTime() / 16.67;
 	}

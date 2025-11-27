@@ -18,6 +18,7 @@ class TestSceneComponentDemo extends DemoSceneClass {
 	private setupLifecycleCallbacks() {
 		// 组件创建后的回调
 		this.onCreated(() => {
+			this.createTestMesh();
 			console.log('✅ TestSceneComponentDemo: onCreated 回调触发');
 			console.log('   - Scene 已绑定:', !!this.scene);
 			console.log('   - Engine 已注入:', !!this.engine);
@@ -89,15 +90,6 @@ class TestSceneComponentDemo extends DemoSceneClass {
 
 		// 注册生命周期回调
 		this.setupLifecycleCallbacks();
-
-		// 模拟加载资源
-		await SceneLoader.ImportMeshAsync(
-			'',
-			'https://raw.githubusercontent.com/CedricGuillemet/dump/master/CharController/',
-			'levelTest.glb',
-			scene
-		);
-		this.createTestMesh();
 	}
 
 	/**

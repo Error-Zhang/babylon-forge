@@ -72,7 +72,7 @@ export class PerformanceMonitor {
 	 */
 	public start() {
 		if (this.isRunning) {
-			console.warn('Babylon performance monitor is already running');
+			console.logWarn('performance monitor is already running');
 			return;
 		}
 
@@ -81,8 +81,6 @@ export class PerformanceMonitor {
 		// 清空历史数据
 		this.fpsHistory = [];
 		this.vertexHistory = [];
-
-		console.logDebug('Babylon performance monitoring started');
 	}
 
 	/**
@@ -90,12 +88,12 @@ export class PerformanceMonitor {
 	 */
 	public stop() {
 		if (!this.isRunning) {
-			console.warn('Babylon performance monitor is not running');
+			console.logWarn('performance monitor is not running');
 			return;
 		}
 
 		this.isRunning = false;
-		console.log('Babylon performance monitoring stopped');
+		console.logInfo('performance monitoring stopped');
 	}
 
 	public getCurrentSceneInfo() {
@@ -220,9 +218,10 @@ export class PerformanceMonitor {
 }
 
 /**
- * Babylon.js 性能面板配置
+ * 性能面板配置
  */
-interface BabylonPanelConfig {
+interface PerformancePanelConfig {
+	toggleKey: string;
 	visible?: boolean;
 	position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 	theme?: 'dark' | 'light';
@@ -254,7 +253,7 @@ interface PerformanceThresholds {
 
 export class PerformancePanel {
 	private monitor: PerformanceMonitor;
-	private config: Required<BabylonPanelConfig>;
+	private config: Required<PerformancePanelConfig>;
 	private panelElement: HTMLDivElement;
 	private updateTimer: number | null = null;
 	private isVisibleRef: Ref<boolean> = useRef(false);
@@ -305,19 +304,20 @@ export class PerformancePanel {
 		warningMeshCount: 400,
 	};
 
-	constructor(config: BabylonPanelConfig = {}) {
+	constructor(config: PerformancePanelConfig) {
 		this.monitor = new PerformanceMonitor();
 		this.config = {
-			visible: config.visible ?? false,
-			position: config.position || 'top-right',
-			theme: config.theme || 'dark',
-			updateInterval: config.updateInterval || 500,
-			showGraphs: config.showGraphs ?? true,
-			showEngineInfo: config.showEngineInfo ?? true,
-			minimized: config.minimized || false,
-			draggable: config.draggable ?? true,
-			showCurveSelector: config.showCurveSelector ?? true,
-			performanceThresholds: config.performanceThresholds || this.defaultPerformanceThresholds,
+			visible: false,
+			position: 'top-right',
+			theme: 'light',
+			updateInterval: 500,
+			showGraphs: true,
+			showEngineInfo: true,
+			minimized: false,
+			draggable: true,
+			showCurveSelector: true,
+			performanceThresholds: this.defaultPerformanceThresholds,
+			...config,
 		};
 
 		this.isVisibleRef.value = this.config.visible;
@@ -351,8 +351,8 @@ export class PerformancePanel {
 	}
 
 	private readonly toggleFun = (event: any) => {
-		// F1: 切换性能面板显示/隐藏
-		if (event.key === 'F1') {
+		// 切换性能面板显示/隐藏
+		if (event.key === this.config.toggleKey) {
 			event.preventDefault();
 			this.isVisibleRef.value = !this.isVisibleRef.value;
 		}
@@ -844,7 +844,7 @@ export class PerformancePanel {
 
 		return `
       <div class="panel-header">
-        <span class="panel-title">性能监控</span>
+        <span class="panel-title">性能监控(${this.config.toggleKey})</span>
         <div class="panel-controls">
           <button class="minimize-btn" title="最小化">−</button>
           <button class="close-btn" title="关闭">×</button>

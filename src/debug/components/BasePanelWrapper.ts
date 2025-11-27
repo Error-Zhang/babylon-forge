@@ -1,20 +1,39 @@
 import { type Ref, useRef, useWatch } from '@/core/reactivity';
+import type { OptionalKeys, OptionalProps, RequiredProps } from '@/utils/TypeUtils.ts';
 
 /**
  * 基础面板配置接口
  */
 export interface BasePanelConfig {
 	visible?: boolean;
+	toggleKey: string;
 	position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 	theme?: 'dark' | 'light';
 	updateInterval?: number;
 	minimized?: boolean;
 	draggable?: boolean;
-	title?: string;
-	width?: string;
-	height?: string;
+	title: string;
+	width: string;
 }
 
+/**
+ * 对外界暴露的key
+ */
+export type BasePanelExposeKeys = Pick<BasePanelConfig, 'toggleKey'>;
+
+/**
+ * 对要继承的面板所必须实现的key
+ */
+export type BasePanelConfigRequiredProps = Omit<RequiredProps<BasePanelConfig>, keyof BasePanelExposeKeys>;
+
+const defaultConfig: OptionalProps<BasePanelConfig> = {
+	theme: 'light',
+	position: 'top-right',
+	visible: false,
+	minimized: false,
+	draggable: true,
+	updateInterval: 100,
+};
 /**
  * 基础面板包装器类
  * 提供通用的面板功能：拖拽、最小化、位置管理等
@@ -47,19 +66,8 @@ export abstract class BasePanelWrapper {
 		dragEndHandler: () => this.handleDragEnd(),
 	};
 
-	constructor(config: BasePanelConfig = {}) {
-		this.config = {
-			visible: config.visible ?? false,
-			position: config.position || 'top-right',
-			theme: config.theme || 'dark',
-			updateInterval: config.updateInterval || 500,
-			minimized: config.minimized || false,
-			draggable: config.draggable ?? true,
-			title: config.title || 'Panel',
-			width: config.width || '320px',
-			height: config.height || 'auto',
-		};
-
+	protected constructor(config: BasePanelConfig) {
+		this.config = { ...defaultConfig, ...config } as Required<BasePanelConfig>;
 		this.isVisibleRef.value = this.config.visible;
 		this.isMinimizedRef.value = this.config.minimized;
 	}
@@ -104,22 +112,17 @@ export abstract class BasePanelWrapper {
 	protected abstract updateDisplay(): void;
 
 	/**
-	 * 抽象方法：获取切换快捷键
+	 * 创建面板元素
 	 */
-	protected abstract getToggleKey(): string;
-
-	/**
-		 * 创建面板元素
-		 */
-		private createPanelElement(): HTMLDivElement {
-			const panel = document.createElement('div');
-			panel.className = 'debug-panel';
-			panel.setAttribute('data-theme', this.config.theme);
-			this.applyStyles(panel);
-			panel.innerHTML = this.getPanelHTML();
-			this.addInternalStyles();
-			return panel;
-		}
+	private createPanelElement(): HTMLDivElement {
+		const panel = document.createElement('div');
+		panel.className = 'debug-panel';
+		panel.setAttribute('data-theme', this.config.theme);
+		this.applyStyles(panel);
+		panel.innerHTML = this.getPanelHTML();
+		this.addInternalStyles();
+		return panel;
+	}
 
 	/**
 	 * 应用面板样式
@@ -129,7 +132,6 @@ export abstract class BasePanelWrapper {
 			position: fixed;
 			${this.getPositionStyles()}
 			width: ${this.config.width};
-			height: ${this.config.height};
 			background: ${this.config.theme === 'dark' ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)'};
 			color: ${this.config.theme === 'dark' ? '#ffffff' : '#000000'};
 			font-family: 'Courier New', monospace;
@@ -260,7 +262,7 @@ export abstract class BasePanelWrapper {
 	 * 切换面板显示
 	 */
 	private readonly toggleFun = (event: KeyboardEvent) => {
-		if (event.key === this.getToggleKey()) {
+		if (event.key === this.config.toggleKey) {
 			this.isVisibleRef.value = !this.isVisibleRef.value;
 		}
 	};
@@ -376,84 +378,84 @@ export abstract class BasePanelWrapper {
 	}
 
 	/**
-		 * 添加内部样式
-		 */
-		private addInternalStyles() {
-			const styleId = 'base-panel-styles';
-			if (document.getElementById(styleId)) return;
+	 * 添加内部样式
+	 */
+	protected addInternalStyles() {
+		const styleId = 'base-panel-styles';
+		if (document.getElementById(styleId)) return;
 
-			const style = document.createElement('style');
-			style.id = styleId;
-			style.textContent = `
-				.debug-panel {
-					font-family: 'Courier New', monospace;
-					user-select: none;
+		const style = document.createElement('style');
+		style.id = styleId;
+		style.textContent = `
+			.debug-panel {
+				font-family: 'Courier New', monospace;
+				user-select: none;
+			}
+
+			.debug-panel[data-theme="dark"] .panel-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 8px 12px;
+				background: rgba(255, 255, 255, 0.1);
+				border-bottom: 1px solid #333;
+				border-radius: 8px 8px 0 0;
+			}
+
+			.debug-panel[data-theme="light"] .panel-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 8px 12px;
+				background: rgba(0, 0, 0, 0.1);
+				border-bottom: 1px solid #ddd;
+				border-radius: 8px 8px 0 0;
+			}
+
+			.panel-title {
+				font-weight: bold;
+				font-size: 14px;
+			}
+
+			.panel-controls {
+				display: flex;
+				gap: 4px;
+			}
+
+			.panel-btn {
+				background: none;
+				border: none;
+				color: inherit;
+				cursor: pointer;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-size: 14px;
+				line-height: 1;
+			}
+
+			.debug-panel[data-theme="dark"] .panel-btn:hover {
+				background: rgba(255, 255, 255, 0.2);
+			}
+
+			.debug-panel[data-theme="light"] .panel-btn:hover {
+				background: rgba(0, 0, 0, 0.2);
+			}
+
+			.panel-content {
+					padding: 12px;
+					max-height: 400px;
+					overflow-y: auto;
 				}
 
-				.debug-panel[data-theme="dark"] .panel-header {
-					display: flex;
-					justify-content: space-between;
-					align-items: center;
-					padding: 8px 12px;
-					background: rgba(255, 255, 255, 0.1);
-					border-bottom: 1px solid #333;
-					border-radius: 8px 8px 0 0;
-				}
-
-				.debug-panel[data-theme="light"] .panel-header {
-					display: flex;
-					justify-content: space-between;
-					align-items: center;
-					padding: 8px 12px;
-					background: rgba(0, 0, 0, 0.1);
-					border-bottom: 1px solid #ddd;
-					border-radius: 8px 8px 0 0;
-				}
-
-				.panel-title {
-					font-weight: bold;
-					font-size: 14px;
-				}
-
-				.panel-controls {
-					display: flex;
-					gap: 4px;
-				}
-
-				.panel-btn {
-					background: none;
-					border: none;
-					color: inherit;
-					cursor: pointer;
-					padding: 2px 6px;
-					border-radius: 3px;
-					font-size: 14px;
-					line-height: 1;
-				}
-
-				.debug-panel[data-theme="dark"] .panel-btn:hover {
-					background: rgba(255, 255, 255, 0.2);
-				}
-
-				.debug-panel[data-theme="light"] .panel-btn:hover {
-					background: rgba(0, 0, 0, 0.2);
+				.panel-content::-webkit-scrollbar {
+					display: none;
 				}
 
 				.panel-content {
-						padding: 12px;
-						max-height: 400px;
-						overflow-y: auto;
-					}
-
-					.panel-content::-webkit-scrollbar {
-						display: none;
-					}
-
-					.panel-content {
-						-ms-overflow-style: none;
-						scrollbar-width: none;
-					}
-			`;
-			document.head.appendChild(style);
-		}
+					-ms-overflow-style: none;
+					scrollbar-width: none;
+				}
+		`;
+		document.head.appendChild(style);
+	}
 }

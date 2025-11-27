@@ -1,3 +1,13 @@
+/**
+ * 响应式原理详解
+ * 核心思想：发布订阅模式 + 代理模式 = 代理订阅模式
+ * 与传统发布订阅模式的区别：不使用固定key(即key隐藏)通过在访问变量的时候抓住变量的引用从而实现无感订阅
+ * 难点：如何绑定回掉函数或者说副作用
+ * 核心函数：track、trigger、effect
+ * 解决方法：在调用track之前设置一个同步的全局变量(副作用函数)然后再调用track传入指定对象并将该对象与全局变量做一个band，band后立即重置
+ * 问题：响应式系统能用一个全局 activeEffect，是因为 JS 是单线程 + 任务队列模型，这保证了 effect 的执行是同步且不会并发冲突
+ * 使用方法(watch computed 基本原理)：先调用effect，effect会传入的函数fn，在effect内部会先设置全局变量然后调用fn，fn要求内部必须要访问响应式变量才能触发getter然后getter内部会调用track函数
+ */
 const SymbolReactive = Symbol('SymbolReactive');
 const SymbolMapReactive = Symbol('SymbolMapReactive');
 const SymbolReadonly = Symbol('SymbolReadonly');
