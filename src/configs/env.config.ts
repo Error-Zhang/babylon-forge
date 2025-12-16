@@ -25,8 +25,8 @@ const getConfig = (): EnvConfig => {
 	if (process.env.NODE_ENV === 'production') config = production;
 	else config = development;
 
-	if (debug) production.DEBUG = debug;
-	if (debugPanel) production.USE_DEBUG_PANEL = debugPanel;
+	if (debug) config.DEBUG = debug;
+	if (debugPanel) config.USE_DEBUG_PANEL = debugPanel;
 
 	return config;
 };
