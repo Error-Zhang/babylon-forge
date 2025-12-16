@@ -948,7 +948,7 @@ export class PerformancePanel {
 				this.config.showCurveSelector
 					? `
           <div class="curve-selector">
-            <label>显示曲线:</label>
+            <span>显示曲线:</span>
             <div class="curve-checkboxes">
               ${this.availableCurves
 					.map(

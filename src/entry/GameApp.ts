@@ -1,21 +1,33 @@
 import { type InitConfig, WebGPUApplication } from '../core/WebGpuStarter.ts';
 import { SceneManager } from '../managers/SceneManager.ts';
 import { SCENE_MAPPINGS } from '@/entry/constants.ts';
+import { Singleton } from '@/global/Singleton.ts';
+import { diContainer } from '@/global/DIContainer.ts';
 
 class GameApp extends WebGPUApplication {
-	public sceneManager!: SceneManager;
-
-	protected override async onInitialize(scene: string, config: InitConfig): Promise<void> {
-		this.sceneManager = new SceneManager(config).registerDemoScenes(SCENE_MAPPINGS);
-		await this.sceneManager.loadScene(scene);
+	protected override async onInitialize(sceneKey: string, config: InitConfig) {
+		await this.initSceneManager(sceneKey, config);
 	}
 
-	protected override onRender(dt: number) {
-		this.sceneManager.render();
+	private async initSceneManager(sceneKey: string, config: InitConfig) {
+		return Singleton.createPromise(SceneManager, config)
+			.then((instance) => {
+				instance.registerDemoScenes(SCENE_MAPPINGS);
+				return instance;
+			})
+			.finally(() => {
+				diContainer.register(SceneManager, SceneManager.Instance);
+			})
+			.then(async (instance) => {
+				await instance.loadScene(sceneKey);
+				this.addRenderLoop(instance.render);
+			});
 	}
+
+	protected override onRender(dt: number) {}
 
 	public dispose() {
-		this.sceneManager.dispose();
+		Singleton.disposeAll();
 	}
 }
 

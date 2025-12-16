@@ -1,10 +1,11 @@
 import { Scene, Sound, AbstractMesh } from '@babylonjs/core';
 import { Inject } from '@/global/Decorators.ts';
 import { INJECT_TOKENS } from '@/entry/constants.ts';
+import { SingleClass } from '@/global/Singleton.ts';
 
 export type SoundCategory = 'bgm' | 'sfx';
 
-export class SoundManager {
+export class SoundManager extends SingleClass {
 	@Inject(INJECT_TOKENS.CurrentScene)
 	private readonly scene!: Scene;
 

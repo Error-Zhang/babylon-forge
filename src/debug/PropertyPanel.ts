@@ -4,7 +4,10 @@ import {
 	getAllPropertyMetadata,
 	getGroupedPropertyMetadata,
 	getAllRegisteredInstances,
+	clearAllRegisteredInstances,
 } from '@/global/FieldMonitorDecorator.ts';
+import { Inject } from '@/global/Decorators.ts';
+import { SceneManager } from '@/managers/SceneManager.ts';
 
 const defaultConfig = {
 	title: '属性面板',
@@ -16,7 +19,8 @@ const defaultConfig = {
  * 继承自 BasePanelWrapper，用于显示和编辑装饰器属性
  */
 export class PropertyPanel extends BasePanelWrapper {
-	private static instance: PropertyPanel | null = null;
+	@Inject(SceneManager)
+	public readonly sceneManager!: SceneManager;
 	private targetInstance: any = null;
 	private groupedMetadata: Record<string, PropertyMetadata[]> = {};
 	private isInitialized = false;
@@ -24,30 +28,20 @@ export class PropertyPanel extends BasePanelWrapper {
 	private currentInstanceIndex = 0;
 	private lastValues: Map<string, any> = new Map();
 	private needsFullRebuild = false;
+	private updateDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(config: Partial<BasePanelConfig> & BasePanelExposeKeys) {
 		super({ ...defaultConfig, ...config });
-		PropertyPanel.instance = this;
+
+		this.sceneManager.onSceneChange((loaded) => {
+			if (loaded) {
+				this.refreshInstances();
+			} else {
+				this.dispose();
+				this.updateDisplay();
+			}
+		});
 		this.init();
-	}
-
-	static get Instance(): PropertyPanel | null {
-		return this.instance;
-	}
-
-	/**
-	 * 通知属性变更
-	 */
-	public notifyPropertyChange(constructor: any, propertyKey: string | symbol): void {
-		// 只有当实例列表发生变化时才刷新
-		const currentInstanceCount = getAllRegisteredInstances().length;
-		if (currentInstanceCount !== this.allInstances.length) {
-			this.refreshInstances();
-			this.needsFullRebuild = true;
-		}
-
-		// 标记需要更新显示
-		this.updateDisplay();
 	}
 
 	/**
@@ -215,13 +209,14 @@ export class PropertyPanel extends BasePanelWrapper {
 		switch (metadata.control) {
 			case 'toggle':
 				controlHTML = `
-          <label class="switch" for="${fieldId}">
+          <label class="switch ${metadata.readonly ? 'readonly-control' : ''}">
             <input type="checkbox" 
                    id="${fieldId}"
                    name="${fieldName}"
                    ${value ? 'checked' : ''} 
+                   ${metadata.readonly ? 'disabled' : ''}
                    data-property="${metadata.propertyKey.toString()}">
-            <span class="slider"></span>
+            <span class="slider ${metadata.readonly ? 'disabled' : ''}"></span>
           </label>
         `;
 				break;
@@ -236,8 +231,10 @@ export class PropertyPanel extends BasePanelWrapper {
                  max="${range.max}" 
                  step="${range.step}" 
                  value="${value}" 
+                 ${metadata.readonly ? 'disabled' : ''}
+                 class="${metadata.readonly ? 'readonly-control' : ''}"
                  data-property="${metadata.propertyKey.toString()}">
-          <span class="slider-value">${formattedValue}</span>
+          <span class="slider-value ${metadata.readonly ? 'readonly-control' : ''}">${formattedValue}</span>
         `;
 				break;
 
@@ -247,6 +244,8 @@ export class PropertyPanel extends BasePanelWrapper {
 					controlHTML = `
               <select id="${fieldId}"
                       name="${fieldName}"
+                      ${metadata.readonly ? 'disabled' : ''}
+                      class="${metadata.readonly ? 'readonly-control' : ''}"
                       data-property="${metadata.propertyKey.toString()}">
                 ${metadata.options
 					.map((option) => `<option value="${option.value}" ${option.value === value ? 'selected' : ''}>${option.label}</option>`)
@@ -264,6 +263,8 @@ export class PropertyPanel extends BasePanelWrapper {
               <select id="${fieldId}"
                       name="${fieldName}"
                       multiple
+                      ${metadata.readonly ? 'disabled' : ''}
+                      class="${metadata.readonly ? 'readonly-control' : ''}"
                       data-property="${metadata.propertyKey.toString()}">
                 ${metadata.options
 					.map((option) => {
@@ -280,7 +281,7 @@ export class PropertyPanel extends BasePanelWrapper {
 				if (metadata.options) {
 					// 单选按钮组
 					controlHTML = `
-              <div class="radio-group" data-property="${metadata.propertyKey.toString()}">
+              <div class="radio-group ${metadata.readonly ? 'readonly-control' : ''}" data-property="${metadata.propertyKey.toString()}">
                 ${metadata.options
 					.map(
 						(option, index) => `
@@ -289,6 +290,7 @@ export class PropertyPanel extends BasePanelWrapper {
                                  name="${fieldName}" 
                                  value="${option.value}" 
                                  ${option.value === value ? 'checked' : ''}
+                                 ${metadata.readonly ? 'disabled' : ''}
                                  data-property="${metadata.propertyKey.toString()}">
                           <span class="radio-label">${option.label}</span>
                         </label>
@@ -305,7 +307,7 @@ export class PropertyPanel extends BasePanelWrapper {
 					// 复选框组
 					const selectedValues = Array.isArray(value) ? value : [];
 					controlHTML = `
-              <div class="checkbox-group" data-property="${metadata.propertyKey.toString()}">
+              <div class="checkbox-group ${metadata.readonly ? 'readonly-control' : ''}" data-property="${metadata.propertyKey.toString()}">
                 ${metadata.options
 					.map(
 						(option, index) => `
@@ -314,7 +316,9 @@ export class PropertyPanel extends BasePanelWrapper {
                                  name="${fieldName}_${index}" 
                                  value="${option.value}" 
                                  ${selectedValues.includes(option.value) ? 'checked' : ''}
-                                 data-property="${metadata.propertyKey.toString()}">
+                                 ${metadata.readonly ? 'disabled' : ''}
+                                 data-property="${metadata.propertyKey.toString()}"
+                                 data-multi-select="true">
                           <span class="checkbox-label">${option.label}</span>
                         </label>
                       `
@@ -325,7 +329,7 @@ export class PropertyPanel extends BasePanelWrapper {
 				}
 				break;
 			default:
-				if (metadata.editable) {
+				if (!metadata.readonly) {
 					// 可编辑：使用输入框
 					controlHTML = `
               <input type="text" 
@@ -335,9 +339,9 @@ export class PropertyPanel extends BasePanelWrapper {
                      data-property="${metadata.propertyKey.toString()}">
             `;
 				} else {
-					// 不可编辑：使用只读文本显示
+					// 只读：使用只读文本显示
 					controlHTML = `
-              <span class="property-readonly-value" 
+              <span class="property-readonly-value readonly-control" 
                     id="${fieldId}"
                     title="${metadata.description}">
                 ${formattedValue}
@@ -347,11 +351,7 @@ export class PropertyPanel extends BasePanelWrapper {
 				break;
 		}
 
-		// 只有可编辑的表单控件才需要label的for属性
-		const labelHTML =
-			metadata.editable && metadata.control !== 'toggle'
-				? `<label for="${fieldId}" title="${metadata.description}">${metadata.displayName}</label>`
-				: `<span title="${metadata.description}">${metadata.displayName}</span>`;
+		const labelHTML = `<span title="${metadata.description}">${metadata.displayName}</span>`;
 
 		return `
       <div class="property-item" data-property="${metadata.propertyKey.toString()}">
@@ -546,6 +546,11 @@ export class PropertyPanel extends BasePanelWrapper {
 					if (document.activeElement !== element && element.value !== formattedValue) {
 						element.value = formattedValue;
 					}
+				} else if (element.classList.contains('property-readonly-value')) {
+					// 更新只读文本显示
+					if (element.textContent !== formattedValue) {
+						element.textContent = formattedValue;
+					}
 				}
 				break;
 		}
@@ -627,11 +632,26 @@ export class PropertyPanel extends BasePanelWrapper {
 			const radioElement = element as HTMLInputElement;
 			const propertyKey = radioElement.dataset.property;
 			if (propertyKey) {
+				// 使用更简单直接的事件处理
 				radioElement.addEventListener('change', (e) => {
+					// 只处理被选中的单选按钮
 					if (radioElement.checked) {
+						console.log(`🔄 Radio button changed: ${propertyKey} = ${radioElement.value}`);
 						this.handlePropertyChange(propertyKey, radioElement.value);
 					}
 				});
+			}
+		});
+		// 处理单选按钮变更 - 使用事件委托方式
+		contentElement.addEventListener('change', (e) => {
+			const target = e.target as HTMLElement;
+			if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'radio') {
+				const radioElement = target as HTMLInputElement;
+				const propertyKey = radioElement.dataset.property;
+				if (propertyKey && radioElement.checked) {
+					console.log(`🔄 Radio button changed via delegation: ${propertyKey} = ${radioElement.value}`);
+					this.handlePropertyChange(propertyKey, radioElement.value);
+				}
 			}
 		});
 
@@ -850,6 +870,9 @@ export class PropertyPanel extends BasePanelWrapper {
 				font-size: 10px;
 				color: ${isDark ? '#cccccc' : '#555555'};
 				font-weight: normal;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 			
 			
@@ -1051,18 +1074,81 @@ export class PropertyPanel extends BasePanelWrapper {
 			}
 			
 			/* 多选框样式 */
-			.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] {
-				height: auto !important;
-				min-height: 80px;
-				max-height: 120px;
-				padding: 2px !important;
-				overflow-y: auto;
-				border: 1px solid ${isDark ? '#5a5a5a' : '#a0a0a0'};
-				background: ${isDark ? '#393939' : '#ffffff'};
-				-webkit-appearance: none;
-				-moz-appearance: none;
-				appearance: none;
-			}
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] {
+					height: auto !important;
+					min-height: 80px;
+					max-height: 120px;
+					padding: 4px !important;
+					overflow-y: auto;
+					border: 2px solid ${isDark ? '#5a5a5a' : '#a0a0a0'};
+					border-radius: 4px;
+					background: ${isDark ? '#393939' : '#ffffff'};
+					-webkit-appearance: none;
+					-moz-appearance: none;
+					appearance: none;
+					box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+					transition: border-color 0.2s ease, box-shadow 0.2s ease;
+				}
+
+				/* 多选框滚动条样式 */
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]::-webkit-scrollbar {
+					width: 8px;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]::-webkit-scrollbar-track {
+					background: ${isDark ? '#2a2a2a' : '#f1f1f1'};
+					border-radius: 4px;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]::-webkit-scrollbar-thumb {
+					background: ${isDark ? '#5a5a5a' : '#c1c1c1'};
+					border-radius: 4px;
+					border: 1px solid ${isDark ? '#393939' : '#ffffff'};
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]::-webkit-scrollbar-thumb:hover {
+					background: ${isDark ? '#6a6a6a' : '#a8a8a8'};
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]::-webkit-scrollbar-thumb:active {
+					background: ${isDark ? '#7a7a7a' : '#909090'};
+				}
+
+				/* Firefox 滚动条样式 */
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] {
+					scrollbar-width: thin;
+					scrollbar-color: ${isDark ? '#5a5a5a #2a2a2a' : '#c1c1c1 #f1f1f1'};
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple]:focus {
+					border-color: ${isDark ? '#007acc' : '#0078d4'};
+					outline: none;
+					box-shadow: 0 0 0 2px ${isDark ? 'rgba(0, 122, 204, 0.3)' : 'rgba(0, 120, 212, 0.3)'}, 
+					            inset 0 1px 3px rgba(0, 0, 0, 0.1);
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] option {
+					padding: 4px 6px;
+					margin: 1px 0;
+					border-radius: 2px;
+					background: ${isDark ? '#393939' : '#ffffff'};
+					color: ${isDark ? '#ffffff' : '#000000'};
+					border: none;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] option:checked {
+					background: ${isDark ? '#007acc' : '#0078d4'} !important;
+					color: #ffffff !important;
+					font-weight: 500;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] option:hover {
+					background: ${isDark ? '#4a4a4a' : '#f0f0f0'} !important;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] option:checked:hover {
+					background: ${isDark ? '#1e8dd6' : '#106ebe'} !important;
+				}
 			
 			.debug-panel[data-theme="${this.config.theme}"] .property-control select[multiple] option {
 				padding: 3px 6px !important;
@@ -1160,22 +1246,59 @@ export class PropertyPanel extends BasePanelWrapper {
 			
 			
 			/* 只读属性值样式 */
-			.debug-panel[data-theme="${this.config.theme}"] .property-readonly-value {
-				display: inline-block;
-				padding: 2px 5px;
-				background: ${isDark ? 'rgba(70, 70, 70, 0.3)' : 'rgba(240, 240, 240, 0.6)'};
-				border: 1px solid ${isDark ? 'rgba(80, 80, 80, 0.4)' : 'rgba(200, 200, 200, 0.6)'};
-				border-radius: 1px;
-				font-size: 10px;
-				color: ${isDark ? '#cccccc' : '#666666'};
-				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-				min-height: 16px;
-				line-height: 12px;
-				box-sizing: border-box;
-				width: 100%;
-				cursor: default;
-				user-select: text;
-			}
+				.debug-panel[data-theme="${this.config.theme}"] .property-readonly-value {
+					display: inline-block;
+					padding: 2px 5px;
+					background: ${isDark ? 'rgba(70, 70, 70, 0.3)' : 'rgba(240, 240, 240, 0.6)'};
+					border: 1px solid ${isDark ? 'rgba(80, 80, 80, 0.4)' : 'rgba(200, 200, 200, 0.6)'};
+					border-radius: 1px;
+					font-size: 10px;
+					color: ${isDark ? '#cccccc' : '#666666'};
+					font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+					min-height: 16px;
+					line-height: 12px;
+					box-sizing: border-box;
+					width: 100%;
+					cursor: not-allowed;
+					user-select: text;
+					opacity: 0.7;
+				}
+
+				/* 禁用状态的控件样式 */
+				.debug-panel[data-theme="${this.config.theme}"] input:disabled,
+				.debug-panel[data-theme="${this.config.theme}"] select:disabled,
+				.debug-panel[data-theme="${this.config.theme}"] .slider.disabled {
+					cursor: not-allowed !important;
+					opacity: 0.6 !important;
+					pointer-events: none;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .switch input:disabled + .slider {
+					cursor: not-allowed !important;
+					opacity: 0.6 !important;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .radio-item input:disabled,
+				.debug-panel[data-theme="${this.config.theme}"] .checkbox-item input:disabled {
+					cursor: not-allowed !important;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .radio-item input:disabled + .radio-label,
+				.debug-panel[data-theme="${this.config.theme}"] .checkbox-item input:disabled + .checkbox-label {
+					cursor: not-allowed !important;
+					opacity: 0.6 !important;
+					color: ${isDark ? '#888888' : '#999999'} !important;
+				}
+
+				/* 只读控件容器统一样式 */
+				.debug-panel[data-theme="${this.config.theme}"] .readonly-control {
+					cursor: not-allowed !important;
+					opacity: 0.7 !important;
+				}
+
+				.debug-panel[data-theme="${this.config.theme}"] .readonly-control * {
+					cursor: not-allowed !important;
+				}
 			
 			/* 提示信息 */
 			.debug-panel[data-theme="${this.config.theme}"] .no-instance,
@@ -1187,5 +1310,30 @@ export class PropertyPanel extends BasePanelWrapper {
 				font-style: italic;
 			}=
 		`;
+	}
+
+	/**
+	 * 卸载当前场景资源
+	 */
+	public dispose(): void {
+		this.targetInstance = null;
+		this.allInstances = [];
+		this.groupedMetadata = {};
+		this.needsFullRebuild = true;
+		clearAllRegisteredInstances();
+	}
+
+	/**
+	 * 清理资源
+	 */
+	public destroy(): void {
+		// 清理防抖定时器
+		if (this.updateDebounceTimer !== null) {
+			clearTimeout(this.updateDebounceTimer);
+			this.updateDebounceTimer = null;
+		}
+
+		// 调用父类的销毁方法
+		super.destroy?.();
 	}
 }

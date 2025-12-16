@@ -1,5 +1,5 @@
 import { type Ref, useRef, useWatch } from '@/core/reactivity';
-import type { OptionalKeys, OptionalProps, RequiredProps } from '@/utils/TypeUtils.ts';
+import type { OptionalKeys, OptionalProps, RequiredProps } from '@/misc/type-utils.ts';
 
 /**
  * 基础面板配置接口
@@ -169,7 +169,7 @@ export abstract class BasePanelWrapper {
 	private getPanelHTML(): string {
 		return `
 			<div class="panel-header">
-				<div class="panel-title">${this.config.title}</div>
+				<div class="panel-title">${this.config.title}(${this.config.toggleKey})</div>
 				<div class="panel-controls">
 					<button class="panel-btn minimize-btn" title="最小化">−</button>
 					<button class="panel-btn close-btn" title="关闭">×</button>
@@ -316,18 +316,6 @@ export abstract class BasePanelWrapper {
 		if (element) {
 			element.textContent = value;
 		}
-	}
-
-	/**
-	 * 格式化数字
-	 */
-	protected formatNumber(num: number): string {
-		if (num >= 1000000) {
-			return (num / 1000000).toFixed(1) + 'M';
-		} else if (num >= 1000) {
-			return (num / 1000).toFixed(1) + 'K';
-		}
-		return num.toString();
 	}
 
 	/**

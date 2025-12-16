@@ -1,8 +1,10 @@
+type ConstructorOf<T> = abstract new (...args: any[]) => T;
 export abstract class Singleton {
 	private static instances = new Map<Function, SingleClass>();
 
-	public static create<T extends SingleClass, C extends new (...args: any[]) => T>(clazz: C, ...args: ConstructorParameters<C>): T {
+	public static create<T extends SingleClass>(clazz: ConstructorOf<T>, ...args: ConstructorParameters<ConstructorOf<T>>): T {
 		if (this.instances.has(clazz)) {
+			console.warn(`Instance ${this.name} already exists`);
 			return <T>this.instances.get(clazz);
 		}
 		const instance = Reflect.construct(clazz, args);
@@ -10,17 +12,21 @@ export abstract class Singleton {
 		return instance;
 	}
 
+	public static createPromise<T extends SingleClass>(clazz: ConstructorOf<T>, ...args: ConstructorParameters<ConstructorOf<T>>): Promise<T> {
+		return Promise.resolve(this.create(clazz, ...args));
+	}
+
 	public static disposeAll() {
 		this.instances.forEach((instance) => instance.dispose?.());
 		this.instances.clear();
 	}
 
-	public static dispose<T extends SingleClass>(clazz: new (...args: any[]) => T) {
+	public static dispose<T extends SingleClass>(clazz: ConstructorOf<T>) {
 		this.instances.get(clazz)?.dispose?.();
 		this.instances.delete(clazz);
 	}
 
-	protected static getInstance<T extends SingleClass>(clazz: new (...args: any[]) => T) {
+	static getInstance<T extends SingleClass>(clazz: ConstructorOf<T>) {
 		if (!this.instances.has(clazz)) {
 			throw new Error('Singleton not initialized. Call create() first.');
 		}
@@ -28,22 +34,14 @@ export abstract class Singleton {
 	}
 }
 
-export class SingleClass extends Singleton {
-	/**
-	 * @deprecated
-	 * 请使用getInstance作为替代
-	 */
-	public static get Instance(): SingleClass {
-		return this.getInstance();
-	}
-
-	public static dispose() {
-		super.dispose(this);
+export abstract class SingleClass {
+	public static get Instance() {
+		return Singleton.getInstance(this);
 	}
 
 	public static getInstance<T extends SingleClass>() {
-		return <T>super.getInstance(this);
+		return Singleton.getInstance(this) as T;
 	}
 
-	public dispose?() {}
+	public abstract dispose(): void;
 }

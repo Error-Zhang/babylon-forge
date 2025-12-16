@@ -1,5 +1,4 @@
 import { ENV_CONFIG } from '@/configs';
-import { PropertyPanel } from '@/debug/PropertyPanel.ts';
 
 /**
  * 支持的数据类型
@@ -40,7 +39,8 @@ export interface PropertyPanelConfig {
 	defaultValue?: any; // 默认值
 
 	// 控制配置
-	editable?: boolean; // 是否可编辑，默认为 true
+	editable?: boolean; // 是否可编辑，默认为 true（实际值是否可更改）
+	readonly?: boolean; // 是否只读，默认为 false（控件展示效果）
 	visible?: boolean; // 是否可见，默认为 true
 	order?: number; // 显示顺序，默认为 0
 
@@ -61,6 +61,9 @@ export interface PropertyPanelConfig {
 
 	// 验证
 	validator?: (value: any) => boolean | string; // 验证函数，返回 true 或错误信息
+
+	// 变化回调
+	onChange?: (self: any, newValue: any, oldValue: any) => void; // 属性变化时调用的回调函数
 }
 
 /**
@@ -72,6 +75,7 @@ export interface PropertyMetadata {
 	group: string;
 	description: string;
 	editable: boolean;
+	readonly: boolean;
 	visible: boolean;
 	order: number;
 	type: PropertyType;
@@ -82,6 +86,7 @@ export interface PropertyMetadata {
 	format?: (value: any) => string;
 	precision: number;
 	validator?: (value: any) => boolean | string;
+	onChange?: (self: any, newValue: any, oldValue: any) => void;
 	target: any;
 	propertyKey: string | symbol;
 	getter?: () => any;
@@ -103,6 +108,13 @@ const globalInstanceRegistry = new Set<any>();
  */
 export function getAllRegisteredInstances(): any[] {
 	return Array.from(globalInstanceRegistry);
+}
+
+/**
+ * 	清除所有注册的实例
+ */
+export function clearAllRegisteredInstances() {
+	globalInstanceRegistry.clear();
 }
 
 /**
@@ -167,7 +179,8 @@ export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV
 				displayName: config.displayName ?? config.name ?? name.toString(),
 				group: config.group ?? 'Default',
 				description: config.description ?? '',
-				editable: config.editable ?? false,
+				editable: config.editable ?? true,
+				readonly: config.readonly ?? false,
 				visible: config.visible ?? true,
 				order: config.order ?? 0,
 				type: inferredType,
@@ -181,6 +194,7 @@ export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV
 				format: config.format,
 				precision: config.precision ?? 2,
 				validator: config.validator,
+				onChange: config.onChange,
 				target: ctor,
 				propertyKey: name,
 				getter: undefined,
@@ -210,10 +224,22 @@ export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV
 					}
 
 					// 转换类型 + 赋值
-					this[privateKey] = convertValue(raw, propertyMeta.type);
+					const oldValue = this[privateKey];
+					const newValue = convertValue(raw, propertyMeta.type);
 
-					// 通知面板更新
-					PropertyPanel.Instance?.notifyPropertyChange(ctor, name);
+					// 只有值真正改变时才更新
+					if (oldValue !== newValue) {
+						this[privateKey] = newValue;
+
+						// 调用属性变化回调方法
+						if (propertyMeta.onChange) {
+							try {
+								propertyMeta.onChange(this, newValue, oldValue);
+							} catch (error) {
+								console.error(`Error calling property change callback function:`, error);
+							}
+						}
+					}
 				},
 			});
 		});

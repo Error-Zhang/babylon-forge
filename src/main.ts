@@ -1,10 +1,8 @@
 import GameApp from './entry/GameApp.ts';
-import { PerformancePanel } from './debug/Performance.ts';
+import { PerformancePanel } from './debug/PerformancePanel.ts';
 import { ENV_CONFIG } from './configs';
-import { diContainer } from '@/global/DIContainer.ts';
-import { SceneManager } from '@/managers/SceneManager.ts';
 import { CanvasCoordinatePanel } from '@/debug/CanvasCoordinatePanel/CanvasCoordinatePanel.ts';
-import chrome from '@/utils/chrome.ts';
+import Chrome from '@/misc/chrome.ts';
 import { PropertyPanel } from '@/debug/PropertyPanel.ts';
 
 const isDebugMode = ENV_CONFIG.DEBUG;
@@ -17,14 +15,12 @@ const App = () => {
 
 	// 启动应用
 	const start = async () => {
-		const demoSceneName = chrome.urlQuery.get('scene');
+		const demoSceneName = Chrome.Query.get<string>('scene');
 
 		app = new GameApp('game-canvas', isDebugMode ? 'debug' : 'high');
 		await app.initialize(demoSceneName || 'PropertyTestDemo', { enablePhysics: true });
 
 		if (isDebugMode) {
-			diContainer.register(SceneManager, app.sceneManager);
-
 			// 性能监控面板
 			performancePanel = new PerformancePanel({
 				toggleKey: 'F1',
@@ -37,9 +33,11 @@ const App = () => {
 			});
 			canvasCoordinatePanel.start();
 
+			// 属性面板
 			propertyPanel = new PropertyPanel({
 				toggleKey: 'F3',
 				theme: 'dark',
+				updateInterval: 500,
 			});
 			propertyPanel.start();
 		}

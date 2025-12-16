@@ -8,7 +8,7 @@ import { CanvasCoordinateMonitor, type CanvasCoordinateMonitorConfig, type Coord
 import { CoordinateRenderer2D } from '@/debug/CanvasCoordinatePanel/renderers/CoordinateRenderer2D.ts';
 import { CoordinateRenderer3D } from '@/debug/CanvasCoordinatePanel/renderers/CoordinateRenderer3D.ts';
 import { useWatch } from '@/core/reactivity';
-import type { OptionalProps } from '@/utils/TypeUtils.ts';
+import type { OptionalProps } from '@/misc/type-utils.ts';
 
 /**
  * Canvas坐标系面板配置接口
@@ -85,19 +85,15 @@ export class CanvasCoordinatePanel extends BasePanelWrapper {
 		super(canvasConfig);
 		this.monitor = new CanvasCoordinateMonitor(config);
 		this.currentView = canvasConfig.defaultView;
-		useWatch(this.monitor.sceneManager.isLoadingSceneRef, (newValue) => {
-			if (newValue) {
+		this.monitor.sceneManager.onSceneChange((loaded) => {
+			if (loaded) {
+				this.monitor.updateScene();
+				this.start();
+			} else {
 				this.stop();
 				this.reinitializeRenderers();
 			}
 		});
-		useWatch(this.monitor.sceneManager.isSceneCreatedRef, (newValue) => {
-			if (newValue) {
-				this.monitor.updateScene();
-				this.start();
-			}
-		});
-
 		this.init();
 	}
 

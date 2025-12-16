@@ -17,12 +17,12 @@ export abstract class SceneComponent {
 	#afterUpdateCbs: CallbackWithDelta[] = [];
 	#disposedCbs: Callback[] = [];
 
-	/** 生命周期：组件被实例化后（注册回调） */
+	/** 生命周期：组件被实例化后 */
 	onCreated = (cb: Callback) => {
 		this.#createdCbs.push(cb);
 	};
 
-	/** 生命周期：组件加入 Scene 后 */
+	/** 生命周期：组件资源全部加载完成后 */
 	onMounted = (cb: Callback) => {
 		this.#mountedCbs.push(cb);
 	};
@@ -42,17 +42,25 @@ export abstract class SceneComponent {
 		this.#disposedCbs.push(cb);
 	};
 
-	/** SceneManager 调用 */
+	/** @internal */
 	_runCreatedCallbacks() {
 		for (const cb of this.#createdCbs) cb();
 	}
 
-	/** SceneManager 调用 */
+	/** @internal */
 	_runMountedCallbacks() {
 		for (const cb of this.#mountedCbs) cb();
 	}
 
-	/** SceneManager 调用 */
+	#runBeforeUpdateCallbacks(dt: number) {
+		for (const cb of this.#beforeUpdateCbs) cb(dt);
+	}
+
+	#runAfterUpdateCallbacks(dt: number) {
+		for (const cb of this.#afterUpdateCbs) cb(dt);
+	}
+
+	/** @internal */
 	_attach = (scene: Scene) => {
 		this._scene = scene;
 		const dt = this.scene!.getEngine().getDeltaTime() / 1000;
@@ -61,16 +69,12 @@ export abstract class SceneComponent {
 
 	#attach_update = (dt: number) => {
 		if (!this.scene) throw new Error('SceneComponent: scene is not attached');
-		for (const cb of this.#beforeUpdateCbs) {
-			this.scene.onBeforeRenderObservable.add(() => {
-				cb(dt);
-			});
-		}
-		for (const cb of this.#afterUpdateCbs) {
-			this.scene.onAfterRenderObservable.add(() => {
-				cb(dt);
-			});
-		}
+		this.scene.onBeforeRenderObservable.add(() => {
+			this.#runBeforeUpdateCallbacks(dt);
+		});
+		this.scene.onAfterRenderObservable.add(() => {
+			this.#runAfterUpdateCallbacks(dt);
+		});
 	};
 
 	dispose() {

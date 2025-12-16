@@ -249,10 +249,17 @@ abstract class WebGPUApplication {
 		});
 	}
 
+	private _renderLoops = new Set<(dt: number) => void>();
+
+	public addRenderLoop(cb: (dt: number) => void) {
+		this._renderLoops.add(cb);
+	}
+
 	protected startRenderLoop() {
 		this.engine.runRenderLoop(() => {
 			let dt = this.engine.getDeltaTime() / 1000;
 			this.onRender(dt);
+			this._renderLoops.forEach((renderLoop) => renderLoop(dt));
 		});
 	}
 

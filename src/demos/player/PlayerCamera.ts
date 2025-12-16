@@ -3,7 +3,7 @@ import { PlayerInputSystem } from './PlayerInputSystem.ts';
 import { PlayerPhysics } from './PlayerPhysics.ts';
 import { INJECT_TOKENS } from '@/entry/constants.ts';
 import { LogReturn, Inject, FieldMonitor } from '@/global/Decorators.ts';
-import utils from '@/utils';
+import Utils from '@/misc/utils.ts';
 
 export abstract class BasePlayerCamera {
 	@Inject(INJECT_TOKENS.CurrentScene)
@@ -12,7 +12,7 @@ export abstract class BasePlayerCamera {
 	protected readonly inputSystem: PlayerInputSystem;
 	protected readonly moveValue = Vector3.Zero();
 
-	@FieldMonitor()
+	@FieldMonitor({ editable: true })
 	protected readonly speed: number = 1;
 
 	private cameraState = {
@@ -110,7 +110,7 @@ export abstract class BasePlayerCamera {
 		this.inputSystem.onActionUpdate('moveRight', () => this.moveRight());
 	}
 
-	@LogReturn({ wrapperFn: utils.throttle }, false)
+	@LogReturn({ wrapperFn: Utils.throttle }, false)
 	protected get dtPercent() {
 		return this.scene.getEngine().getDeltaTime() / 16.67;
 	}

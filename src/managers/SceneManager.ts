@@ -1,13 +1,15 @@
 import { HavokPlugin, Scene, Vector3 } from '@babylonjs/core';
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
 import { INJECT_TOKENS, SCENE_MAPPINGS } from '@/entry/constants.ts';
-import { type Ref, useRef } from '@/core/reactivity';
+import { type Ref, useRef, useWatch } from '@/core/reactivity';
 import { diContainer } from '@/global/DIContainer.ts';
 import type { InitConfig } from '@/core/WebGpuStarter.ts';
 import type { SceneComponent } from '@/components/SceneComponent.ts';
-import chrome from '@/utils/chrome.ts';
+import Chrome from '@/misc/chrome.ts';
+import { SingleClass } from '@/global/Singleton.ts';
+import Utils from '@/misc/utils.ts';
 
-export class SceneManager {
+export class SceneManager extends SingleClass {
 	private sceneMap: Map<string, new () => DemoSceneClass> = new Map();
 	private _currentScene?: Scene;
 	public sceneComponent?: SceneComponent;
@@ -16,7 +18,14 @@ export class SceneManager {
 	private _isSceneCreatedRef = useRef(false);
 	private _isSceneMountedRef = useRef(false);
 
-	constructor(private config: InitConfig) {}
+	private _sceneChangeCbs: Array<(loaded: boolean) => void> = [];
+
+	constructor(private config: InitConfig) {
+		super();
+		useWatch(this._isSceneCreatedRef, (loaded) => {
+			this._sceneChangeCbs.forEach((cb) => cb(loaded));
+		});
+	}
 
 	get currentScene() {
 		return this._currentScene;
@@ -52,22 +61,21 @@ export class SceneManager {
 			console.logWarn('Scene is already loading, please wait...');
 			return;
 		}
+		if (!this.sceneMap.has(sceneKey)) {
+			console.logError(`'${sceneKey}' is not registered`);
+			return;
+		}
+
+		const importFn = SCENE_MAPPINGS[sceneKey as keyof typeof SCENE_MAPPINGS];
+		if (!importFn) {
+			console.logError(`No import function found for scene '${sceneKey}'`);
+			return;
+		}
+
+		this.dispose();
+		this._isLoadingRef.value = true;
 
 		try {
-			if (!this.sceneMap.has(sceneKey)) {
-				console.logError(`'${sceneKey}' is not registered`);
-				return;
-			}
-
-			this.dispose();
-			this._isLoadingRef.value = true;
-
-			const importFn = SCENE_MAPPINGS[sceneKey as keyof typeof SCENE_MAPPINGS];
-			if (!importFn) {
-				console.logError(`No import function found for scene '${sceneKey}'`);
-				return;
-			}
-
 			const SceneClass = await importFn();
 			const sceneInstance = new SceneClass() as DemoSceneClass;
 
@@ -95,7 +103,7 @@ export class SceneManager {
 			}
 
 			this._isSceneCreatedRef.value = true;
-			chrome.urlQuery.set('scene', sceneKey);
+			Chrome.Query.set('scene', sceneKey);
 
 			console.logSuccess(`'${sceneKey}' has created`);
 			sceneInstance._runCreatedCallbacks();
@@ -106,18 +114,21 @@ export class SceneManager {
 			console.logError(e);
 		} finally {
 			if (!this._currentScene) this._isLoadingRef.value = false;
-			this._currentScene!.executeWhenReady(() => {
+
+			this._currentScene?.executeWhenReady(() => {
 				console.logSuccess(`'${sceneKey}' has mounted.`);
 				this.sceneComponent!._runMountedCallbacks();
-				this._isLoadingRef.value = false;
-				this._isSceneMountedRef.value = true;
+				Utils.nextTick().then(() => {
+					this._isLoadingRef.value = false;
+					this._isSceneMountedRef.value = true;
+				});
 			});
 		}
 	}
 
-	public render() {
+	public render = () => {
 		this._currentScene?.render();
-	}
+	};
 
 	public getAvailableScenes(): string[] {
 		return Array.from(this.sceneMap.keys());
@@ -126,11 +137,17 @@ export class SceneManager {
 	public get isLoadingSceneRef(): Ref<boolean> {
 		return this._isLoadingRef;
 	}
+
 	public get isSceneCreatedRef(): Ref<boolean> {
 		return this._isSceneCreatedRef;
 	}
-	public get isSceneMounted(): Ref<boolean> {
+
+	public get isSceneMountedRef(): Ref<boolean> {
 		return this._isSceneMountedRef;
+	}
+
+	public onSceneChange(cb: (loaded: boolean) => void) {
+		this._sceneChangeCbs.push(cb);
 	}
 
 	public dispose(): void {

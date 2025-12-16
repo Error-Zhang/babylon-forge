@@ -6,36 +6,45 @@ class DIContainer {
 		return (this._instance ??= new DIContainer());
 	}
 
-	private services = new Map<any, any>();
+	private services = new Map<string, any>();
 
 	replace<T>(token: DIToken<T>, instance: T) {
-		this.services.set(token, instance);
+		this.services.set(this.keyOf(token), instance);
 	}
 
 	remove<T>(token: DIToken<T>) {
-		this.services.delete(token);
+		this.services.delete(this.keyOf(token));
+	}
+
+	keyOf<T>(token: DIToken<T>): string {
+		if (typeof token === 'function') {
+			if (token.name) return token.name;
+			return token().name;
+		}
+		return token;
 	}
 
 	register<T>(token: DIToken<T>, instance: T) {
-		const name = typeof token === 'string' ? token : token.name;
-		if (this.services.has(token)) {
-			const exist = this.services.get(name);
-			if (exist === instance) console.logWarn(`Service '${name}' has already registered.`);
-			else console.logError(`Service '${name}' has already registered but instance not same`);
+		const key = this.keyOf(token);
+		if (this.services.has(key)) {
+			const exist = this.services.get(key);
+			if (exist === instance) console.logWarn(`Service '${key}' has already registered.`);
+			else console.logError(`Service '${key}' has already registered but instance not same`);
 			return;
 		}
-		this.services.set(token, instance);
+		this.services.set(key, instance);
 	}
+
 	has<T>(token: DIToken<T>): boolean {
-		return this.services.has(token);
+		return this.services.has(this.keyOf(token));
 	}
 
 	get<T>(token: DIToken<T>): T {
-		const name = typeof token === 'string' ? token : token.name;
-		if (!this.services.has(token)) {
-			throw new Error(`Service '${name}' not registered`);
+		const key = this.keyOf(token);
+		if (!this.services.has(key)) {
+			throw new Error(`Service '${key}' not registered`);
 		}
-		return this.services.get(token);
+		return this.services.get(key);
 	}
 }
 export const diContainer = DIContainer.Instance;
