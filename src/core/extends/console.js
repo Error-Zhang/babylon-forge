@@ -19,7 +19,7 @@
 	if (!proto.logLoading) proto.logLoading = createLogger('log', 'Loading', 'purple');
 	if (!proto.logCustom) {
 		proto.logCustom = function ({ prefix, color, method }, ...args) {
-			console[method || 'log'](`%c${prefix}`, `color:${color};${baseStyle}`, ...args);
+			console[method || 'log'](`%c${prefix || ''}`, `color:${color || '#000'};${baseStyle}`, ...args);
 		};
 	}
 })();

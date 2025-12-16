@@ -43,6 +43,45 @@ namespace Utils {
 			return new Promise((resolve) => setTimeout(resolve));
 		}
 	}
+
+	type ImmediateTask = {
+		action: () => void;
+		order: number;
+		seq: number; // 保证稳定排序
+	};
+
+	let ImmediateQueue: ImmediateTask[] = [];
+	let seqCounter = 0;
+
+	/**
+	 * Execute a function after the current execution block
+	 * @param action defines the action to execute
+	 * @param order lower value = higher priority
+	 */
+	export function setImmediate(action: () => void, order = 0) {
+		if (ImmediateQueue.length === 0) {
+			setTimeout(() => {
+				const tasks = ImmediateQueue;
+				ImmediateQueue = [];
+
+				// 排序：order → seq（稳定）
+				tasks.sort((a, b) => a.order - b.order || a.seq - b.seq).forEach((task) => task.action());
+			}, 1);
+		}
+
+		ImmediateQueue.push({
+			action,
+			order,
+			seq: seqCounter++,
+		});
+	}
+
+	async function measureTime(fn: Function, prefix?: string) {
+		const t0 = performance.now();
+		await fn();
+		const t1 = performance.now();
+		console.logCustom({ prefix: prefix ?? fn.name }, `Execution time: ${(t1 - t0).toFixed(3)} ms`);
+	}
 }
 
 export default Utils;

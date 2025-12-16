@@ -1,5 +1,6 @@
 import { type Ref, useRef, useWatch } from '@/core/reactivity';
 import type { OptionalKeys, OptionalProps, RequiredProps } from '@/misc/type-utils.ts';
+import type { IPanel } from '@/debug/PanelManager.ts';
 
 /**
  * 基础面板配置接口
@@ -38,7 +39,7 @@ const defaultConfig: OptionalProps<BasePanelConfig> = {
  * 基础面板包装器类
  * 提供通用的面板功能：拖拽、最小化、位置管理等
  */
-export abstract class BasePanelWrapper {
+export abstract class BasePanelWrapper implements IPanel {
 	protected config: Required<BasePanelConfig>;
 	protected panelElement!: HTMLDivElement;
 	protected updateTimer: number | null = null;

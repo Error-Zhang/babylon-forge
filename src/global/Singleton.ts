@@ -1,4 +1,5 @@
-type ConstructorOf<T> = abstract new (...args: any[]) => T;
+import type { ConstructorOf } from '@/misc/type-utils.ts';
+
 export abstract class Singleton {
 	private static instances = new Map<Function, SingleClass>();
 

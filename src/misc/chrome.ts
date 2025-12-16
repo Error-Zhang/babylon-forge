@@ -24,14 +24,6 @@ namespace Chrome {
 
 			return v as T;
 		},
-		safeGet<T>(key: string): Nullable<T> {
-			Array.from([key, key.toLowerCase(), key.toUpperCase(), key.replace(/^[a-z]/, (c) => c.toUpperCase()), key.toWellFormed()]).forEach(
-				(value) => {
-					if (this.get(value)) return value as T;
-				}
-			);
-			return null;
-		},
 
 		/** 设置某个参数（value 为 null 则删除） */
 		set(key: string, value: any, options = { replace: false }) {

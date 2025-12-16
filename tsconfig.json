@@ -33,5 +33,6 @@
   },
   "include": [
     "src",
+    "src/core/extends/index.d.ts",
   ]
 }

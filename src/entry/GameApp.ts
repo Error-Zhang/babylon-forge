@@ -26,7 +26,7 @@ class GameApp extends WebGPUApplication {
 
 	protected override onRender(dt: number) {}
 
-	public dispose() {
+	public override dispose() {
 		Singleton.disposeAll();
 	}
 }

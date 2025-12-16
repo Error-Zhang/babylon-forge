@@ -8,6 +8,7 @@ import {
 } from '@/global/FieldMonitorDecorator.ts';
 import { Inject } from '@/global/Decorators.ts';
 import { SceneManager } from '@/managers/SceneManager.ts';
+import type { IPanel } from '@/debug/PanelManager.ts';
 
 const defaultConfig = {
 	title: '属性面板',

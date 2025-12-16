@@ -264,6 +264,7 @@ abstract class WebGPUApplication {
 	}
 
 	destroy() {
+		this.dispose();
 		this.engine?.dispose();
 		window.removeEventListener('resize', this.onResize);
 	}
@@ -275,6 +276,8 @@ abstract class WebGPUApplication {
 	protected abstract onInitialize(scene: string, config?: InitConfig): Promise<void>;
 
 	protected abstract onRender(dt: number): void;
+
+	protected abstract dispose(): void;
 
 	protected onEngineInitialized() {}
 

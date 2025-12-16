@@ -1,18 +1,19 @@
-import { FreeCamera, Scene, Vector3 } from '@babylonjs/core';
+import { FreeCamera, type IDisposable, Scene, Vector3 } from '@babylonjs/core';
 import { PlayerInputSystem } from './PlayerInputSystem.ts';
 import { PlayerPhysics } from './PlayerPhysics.ts';
 import { INJECT_TOKENS } from '@/entry/constants.ts';
 import { LogReturn, Inject, FieldMonitor } from '@/global/Decorators.ts';
 import Utils from '@/misc/utils.ts';
+import Screen from '@/misc/screen.ts';
 
-export abstract class BasePlayerCamera {
+export abstract class BasePlayerCamera implements IDisposable {
 	@Inject(INJECT_TOKENS.CurrentScene)
 	protected scene!: Scene;
 	protected readonly camera: FreeCamera;
 	protected readonly inputSystem: PlayerInputSystem;
 	protected readonly moveValue = Vector3.Zero();
 
-	@FieldMonitor({ editable: true })
+	@FieldMonitor()
 	protected readonly speed: number = 1;
 
 	private cameraState = {
@@ -43,6 +44,8 @@ export abstract class BasePlayerCamera {
 		this.scene.onDisposeObservable.add(() => {
 			this.dispose();
 		});
+
+		Screen.addCrossHair(this.scene);
 	}
 
 	dispose() {

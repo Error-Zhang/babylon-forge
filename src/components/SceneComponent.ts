@@ -1,9 +1,9 @@
-import type { Scene } from '@babylonjs/core';
+import type { IDisposable, Scene } from '@babylonjs/core';
 
 type Callback = () => void;
 type CallbackWithDelta = (dt: number) => void;
 
-export abstract class SceneComponent {
+export abstract class SceneComponent implements IDisposable {
 	private _scene?: Scene;
 
 	public get scene() {

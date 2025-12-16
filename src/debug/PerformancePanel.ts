@@ -3,6 +3,7 @@ import { type Ref, useRef, useWatch } from '@/core/reactivity';
 import { Inject } from '@/global/Decorators.ts';
 import { SceneManager } from '@/managers/SceneManager.ts';
 import { INJECT_TOKENS } from '@/entry/constants.ts';
+import type { IPanel } from '@/debug/PanelManager.ts';
 
 export interface BabylonPerformanceMetrics {
 	// 基础性能
@@ -251,7 +252,7 @@ interface PerformanceThresholds {
 	warningMeshCount: number; // 警告的网格数阈值
 }
 
-export class PerformancePanel {
+export class PerformancePanel implements IPanel {
 	private monitor: PerformanceMonitor;
 	private config: Required<PerformancePanelConfig>;
 	private panelElement: HTMLDivElement;

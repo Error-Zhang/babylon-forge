@@ -24,7 +24,7 @@ import { CreativeCamera } from '@/demos/player/PlayerCamera.ts';
  * 展示所有可用控件类型，每个控件都与场景中的物体关联
  * 创建一个虚拟的游戏世界，包含角色、环境、武器等元素
  */
-class PropertyTestDemo extends DemoSceneClass {
+class PropertyDemoScene extends DemoSceneClass {
 	// === 角色属性组 ===
 	@FieldMonitor({
 		group: '🎮 角色属性',
@@ -450,7 +450,7 @@ class PropertyTestDemo extends DemoSceneClass {
 		// 设置更新循环
 		this.setupUpdateLoop();
 
-		console.log('🎮 PropertyTestDemo: 完整演示场景创建完成');
+		console.log('🎮 PropertyDemoScene: 完整演示场景创建完成');
 		console.log('📋 可以按 F3 打开属性面板，体验所有控件类型');
 		console.log('🎯 每个控件都会实时影响场景中的对应元素');
 	}
@@ -1073,7 +1073,7 @@ class PropertyTestDemo extends DemoSceneClass {
 		this.updateCharacterAppearance();
 		this.updateSceneBackground();
 
-		console.log('🔄 PropertyTestDemo: 所有属性已重置为默认值');
+		console.log('🔄 PropertyDemoScene: 所有属性已重置为默认值');
 	}
 
 	/**
@@ -1146,7 +1146,7 @@ class PropertyTestDemo extends DemoSceneClass {
 		this.updateSceneBackground();
 		this.updateLighting(0);
 
-		console.log('🎲 PropertyTestDemo: 所有属性已随机化，观察场景变化！');
+		console.log('🎲 PropertyDemoScene: 所有属性已随机化，观察场景变化！');
 	}
 
 	/**
@@ -1252,8 +1252,8 @@ class PropertyTestDemo extends DemoSceneClass {
 			this.animations = undefined;
 		}
 
-		console.log('🗑️ PropertyTestDemo: 所有资源已清理完毕');
+		console.log('🗑️ PropertyDemoScene: 所有资源已清理完毕');
 	}
 }
 
-export default PropertyTestDemo;
+export default PropertyDemoScene;
