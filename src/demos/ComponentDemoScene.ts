@@ -1,15 +1,12 @@
 import { DemoSceneClass } from '@/global/DemoSceneClass.ts';
-import { Scene, MeshBuilder, StandardMaterial, Color3, Vector3, HemisphericLight, FreeCamera, Color4, SceneLoader } from '@babylonjs/core';
+import { Scene, MeshBuilder, Vector3, HemisphericLight, FreeCamera, Color4, SceneLoader } from '@babylonjs/core';
 import type { InitConfig } from '@/core/WebGpuStarter.ts';
 import '@babylonjs/loaders';
 /**
  * 测试 SceneComponent 生命周期的演示类
  * 继承自 DemoSceneClass，用于演示组件的各个生命周期阶段
  */
-class TestSceneComponentDemo extends DemoSceneClass {
-	private cube?: any;
-	private material?: StandardMaterial;
-	private rotationSpeed = 1;
+class ComponentDemoScene extends DemoSceneClass {
 	private frameCount = 0;
 
 	/**
@@ -17,17 +14,17 @@ class TestSceneComponentDemo extends DemoSceneClass {
 	 */
 	private setupLifecycleCallbacks() {
 		// 组件创建后的回调
-		this.onCreated(() => {
-			console.log('✅ TestSceneComponentDemo: onCreated 回调触发');
+		this.addCreatedHook(() => {
+			console.log('✅ ComponentDemoScene: onCreated 回调触发');
 		});
 
 		// 组件挂载后的回调
-		this.onMounted(() => {
-			console.log('🚀 TestSceneComponentDemo: onMounted 回调触发');
+		this.addMountedHook(() => {
+			console.log('🚀 ComponentDemoScene: onMounted 回调触发');
 		});
 
 		// 每帧更新前的回调
-		this.onBeforeUpdate((deltaTime: number) => {
+		this.addBeforeUpdateHook((deltaTime: number) => {
 			this.frameCount++;
 			if (this.frameCount % 60 === 0) {
 				// 每60帧输出一次日志
@@ -36,7 +33,7 @@ class TestSceneComponentDemo extends DemoSceneClass {
 		});
 
 		// 每帧更新后的回调
-		this.onAfterUpdate((deltaTime: number) => {
+		this.addAfterUpdateHook((deltaTime: number) => {
 			if (this.frameCount % 60 === 0) {
 				// 每60帧输出一次日志
 				console.log(`🔄 TestSceneComponentDemo: onAfterUpdate - Frame ${this.frameCount}`);
@@ -44,8 +41,8 @@ class TestSceneComponentDemo extends DemoSceneClass {
 		});
 
 		// 组件销毁前的回调
-		this.onDisposed(() => {
-			console.log('🗑️ TestSceneComponentDemo: onDisposed 回调触发');
+		this.addDisposedHook(() => {
+			console.log('🗑️ ComponentDemoScene: onDisposed 回调触发');
 		});
 	}
 
@@ -68,10 +65,19 @@ class TestSceneComponentDemo extends DemoSceneClass {
 		const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
 		light.intensity = 0.7;
 
-		// const box = MeshBuilder.CreateBox('box', { size: 1 }, scene);
+		const box = MeshBuilder.CreateBox('box', { size: 1 }, scene);
 
 		// 注册生命周期回调
 		this.setupLifecycleCallbacks();
 	}
+
+	addCreatedHook(cb: any) {
+		super.addCreatedHook(cb);
+		console.log('该方法执行的时候会报错');
+	}
+
+	onCreated = () => {
+		console.log('onCreated');
+	};
 }
-export default TestSceneComponentDemo;
+export default ComponentDemoScene;

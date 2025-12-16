@@ -117,7 +117,7 @@ export class SceneManager extends SingleClass {
 
 			this._currentScene?.executeWhenReady(() => {
 				console.logSuccess(`'${sceneKey}' has mounted.`);
-				this.sceneComponent!._runMountedCallbacks();
+				this.sceneComponent?._runMountedCallbacks();
 				Utils.nextTick().then(() => {
 					this._isLoadingRef.value = false;
 					this._isSceneMountedRef.value = true;

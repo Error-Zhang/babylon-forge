@@ -1,4 +1,5 @@
 import type { IDisposable, Scene } from '@babylonjs/core';
+import { Sealed } from '@/global/Decorators.ts';
 
 type Callback = () => void;
 type CallbackWithDelta = (dt: number) => void;
@@ -17,55 +18,73 @@ export abstract class SceneComponent implements IDisposable {
 	#afterUpdateCbs: CallbackWithDelta[] = [];
 	#disposedCbs: Callback[] = [];
 
+	onCreated?: () => void;
+	onMounted?: () => void;
+	onBeforeUpdate?: () => void;
+	onAfterUpdate?: () => void;
+	onDisposed?: () => void;
+
 	/** 生命周期：组件被实例化后 */
-	onCreated = (cb: Callback) => {
+	@Sealed()
+	addCreatedHook(cb: Callback) {
 		this.#createdCbs.push(cb);
-	};
+	}
 
 	/** 生命周期：组件资源全部加载完成后 */
-	onMounted = (cb: Callback) => {
+	@Sealed()
+	addMountedHook(cb: Callback) {
 		this.#mountedCbs.push(cb);
-	};
+	}
 
 	/** 每帧更新前 */
-	onBeforeUpdate = (cb: CallbackWithDelta) => {
+	@Sealed()
+	addBeforeUpdateHook(cb: CallbackWithDelta) {
 		this.#beforeUpdateCbs.push(cb);
-	};
+	}
 
 	/** 每帧更新后 */
-	onAfterUpdate = (cb: CallbackWithDelta) => {
+	@Sealed()
+	addAfterUpdateHook(cb: CallbackWithDelta) {
 		this.#afterUpdateCbs.push(cb);
-	};
+	}
 
 	/** 组件销毁前 */
-	onDisposed = (cb: Callback) => {
+	@Sealed()
+	addDisposedHook(cb: Callback) {
 		this.#disposedCbs.push(cb);
-	};
+	}
 
 	/** @internal */
+	@Sealed()
 	_runCreatedCallbacks() {
+		this.onCreated?.();
 		for (const cb of this.#createdCbs) cb();
 	}
 
 	/** @internal */
+	@Sealed()
 	_runMountedCallbacks() {
+		this.onMounted?.();
 		for (const cb of this.#mountedCbs) cb();
 	}
 
 	#runBeforeUpdateCallbacks(dt: number) {
+		this.onBeforeUpdate?.();
 		for (const cb of this.#beforeUpdateCbs) cb(dt);
 	}
 
 	#runAfterUpdateCallbacks(dt: number) {
+		this.onAfterUpdate?.();
 		for (const cb of this.#afterUpdateCbs) cb(dt);
 	}
 
 	/** @internal */
-	_attach = (scene: Scene) => {
+	@Sealed()
+	_attach(scene: Scene) {
 		this._scene = scene;
 		const dt = this.scene!.getEngine().getDeltaTime() / 1000;
 		this.#attach_update(dt);
-	};
+	}
 
 	#attach_update = (dt: number) => {
 		if (!this.scene) throw new Error('SceneComponent: scene is not attached');
@@ -78,6 +97,7 @@ export abstract class SceneComponent implements IDisposable {
 	};
 
 	dispose() {
+		this.onDisposed?.();
 		for (const cb of this.#disposedCbs) cb();
 
 		// 清理所有回调（避免内存泄漏）

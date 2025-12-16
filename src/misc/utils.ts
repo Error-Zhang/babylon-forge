@@ -22,7 +22,7 @@ namespace Utils {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
-	export function nextTick(mode: 'micro' | 'message' | 'frame' = 'frame') {
+	export function nextTick(mode: 'micro' | 'message' | 'frame' | 'default' = 'default') {
 		try {
 			switch (mode) {
 				case 'micro':
@@ -37,6 +37,8 @@ namespace Utils {
 					return new Promise<void>((resolve) => {
 						requestAnimationFrame(() => resolve());
 					});
+				default:
+					return new Promise((resolve) => setTimeout(resolve));
 			}
 		} catch (e) {
 			console.warn(e);

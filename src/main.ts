@@ -18,7 +18,7 @@ const App = () => {
 		const scene = Chrome.Query.get<string>('scene');
 
 		app = new GameApp('game-canvas', isDebugMode ? 'debug' : 'high');
-		await app.initialize(scene || 'PropertyDemoScene', { enablePhysics: true });
+		await app.initialize(scene || 'ComponentDemoScene', { enablePhysics: true });
 
 		if (useDebugPanel) {
 			// 性能监控面板

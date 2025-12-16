@@ -39,4 +39,21 @@ export function LogReturn(
 		};
 	};
 }
+
+export function Sealed() {
+	return function (orgFn: Function, context: ClassMethodDecoratorContext) {
+		// 如果在子类重写，会在运行时抛出错误
+		return function (this: any, ...args: any[]) {
+			const cls = this.constructor;
+			const methodName = context.name.toString();
+			// 在第一次调用时检查是否被重写
+			if (cls.prototype.hasOwnProperty(methodName)) {
+				console.logError(`Method ${methodName} is final and cannot be overridden.`);
+			}
+
+			return orgFn.apply(this, args);
+		};
+	};
+}
+
 export { FieldMonitor } from './FieldMonitorDecorator';

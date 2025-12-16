@@ -639,7 +639,7 @@ class PropertyDemoScene extends DemoSceneClass {
 	 * 设置更新循环
 	 */
 	private setupUpdateLoop() {
-		this.onBeforeUpdate((deltaTime: number) => {
+		this.addBeforeUpdateHook((deltaTime: number) => {
 			this.frameCount++;
 
 			// 更新状态信息
