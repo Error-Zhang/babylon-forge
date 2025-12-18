@@ -389,6 +389,10 @@ interface WebGPUEngineOptions {
 
 ## 🎨 演示场景
 
+### 项目效果展示
+
+![Babylon Forge Demo](public/demo.png)
+
 ### 1. ComponentDemoScene
 组件生命周期演示场景，展示组件的创建、挂载、更新、销毁过程。
 
