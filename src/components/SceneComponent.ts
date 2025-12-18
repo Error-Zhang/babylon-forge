@@ -25,44 +25,44 @@ export abstract class SceneComponent implements IDisposable {
 	onDisposed?: () => void;
 
 	/** 生命周期：组件被实例化后 */
-	@Sealed()
+	@Sealed
 	addCreatedHook(cb: Callback) {
 		this.#createdCbs.push(cb);
 	}
 
 	/** 生命周期：组件资源全部加载完成后 */
-	@Sealed()
+	@Sealed
 	addMountedHook(cb: Callback) {
 		this.#mountedCbs.push(cb);
 	}
 
 	/** 每帧更新前 */
-	@Sealed()
+	@Sealed
 	addBeforeUpdateHook(cb: CallbackWithDelta) {
 		this.#beforeUpdateCbs.push(cb);
 	}
 
 	/** 每帧更新后 */
-	@Sealed()
+	@Sealed
 	addAfterUpdateHook(cb: CallbackWithDelta) {
 		this.#afterUpdateCbs.push(cb);
 	}
 
 	/** 组件销毁前 */
-	@Sealed()
+	@Sealed
 	addDisposedHook(cb: Callback) {
 		this.#disposedCbs.push(cb);
 	}
 
 	/** @internal */
-	@Sealed()
+	@Sealed
 	_runCreatedCallbacks() {
 		this.onCreated?.();
 		for (const cb of this.#createdCbs) cb();
 	}
 
 	/** @internal */
-	@Sealed()
+	@Sealed
 	_runMountedCallbacks() {
 		this.onMounted?.();
 		for (const cb of this.#mountedCbs) cb();
@@ -79,7 +79,7 @@ export abstract class SceneComponent implements IDisposable {
 	}
 
 	/** @internal */
-	@Sealed()
+	@Sealed
 	_attach(scene: Scene) {
 		this._scene = scene;
 		const dt = this.scene!.getEngine().getDeltaTime() / 1000;

@@ -142,18 +142,18 @@ function getOrCreateMetadataMap(target: any): Map<string | symbol, PropertyMetad
 }
 
 /**
- * 字段监测注解，可以把字段推送到属性面板中
+ * 字段监测，可以把字段推送到属性面板中
  * @param config
  * @param on
  * @constructor
  */
-export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV_CONFIG.DEBUG) {
+export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV_CONFIG.DEBUG && ENV_CONFIG.USE_DEBUG_PANEL) {
 	return function (_: undefined, context: ClassFieldDecoratorContext) {
 		const { name, static: isStatic } = context;
 		// 如果 on = false，什么也不做，直接返回原始字段
 		if (!on) return;
 
-		// 延迟到实例创建时再注册元数据与拦截器
+		// 延迟到实例创建时(constructor执行完毕时)再注册元数据与拦截器
 		context.addInitializer(function (this: any) {
 			const host: any = this;
 			const ctor = isStatic ? this : this.constructor;
