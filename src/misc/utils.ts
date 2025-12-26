@@ -22,27 +22,16 @@ namespace Utils {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
-	export function nextTick(mode: 'micro' | 'message' | 'frame' | 'default' = 'default') {
-		try {
-			switch (mode) {
-				case 'micro':
-					return Promise.resolve();
-				case 'message':
-					return new Promise<void>((resolve) => {
-						const c = new MessageChannel();
-						c.port1.onmessage = () => resolve();
-						c.port2.postMessage(null);
-					});
-				case 'frame':
-					return new Promise<void>((resolve) => {
-						requestAnimationFrame(() => resolve());
-					});
-				default:
-					return new Promise((resolve) => setTimeout(resolve));
-			}
-		} catch (e) {
-			console.warn(e);
-			return new Promise((resolve) => setTimeout(resolve));
+	export function nextTick(mode: 'micro' | 'frame' | 'default' = 'default') {
+		switch (mode) {
+			case 'micro':
+				return Promise.resolve();
+			case 'frame':
+				return new Promise<void>((resolve) => {
+					requestAnimationFrame(() => resolve());
+				});
+			default:
+				return new Promise((resolve) => setTimeout(resolve));
 		}
 	}
 

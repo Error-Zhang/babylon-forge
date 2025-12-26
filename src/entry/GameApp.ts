@@ -15,12 +15,12 @@ class GameApp extends WebGPUApplication {
 				instance.registerDemoScenes(SCENE_MAPPINGS);
 				return instance;
 			})
-			.finally(() => {
-				diContainer.register(SceneManager, SceneManager.Instance);
-			})
 			.then(async (instance) => {
 				await instance.loadScene(sceneKey);
 				this.addRenderLoop(instance.render);
+			})
+			.finally(() => {
+				diContainer.register(SceneManager, SceneManager.Instance);
 			});
 	}
 
