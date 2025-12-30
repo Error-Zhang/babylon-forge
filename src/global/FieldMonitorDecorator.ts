@@ -147,7 +147,7 @@ function getOrCreateMetadataMap(target: any): Map<string | symbol, PropertyMetad
  * @param on
  * @constructor
  */
-export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV_CONFIG.DEBUG && ENV_CONFIG.USE_DEBUG_PANEL) {
+export function FieldMonitor(config: PropertyPanelConfig = {}, on: boolean = ENV_CONFIG.DEBUG) {
 	return function (_: undefined, context: ClassFieldDecoratorContext) {
 		const { name, static: isStatic } = context;
 		// 如果 on = false，什么也不做，直接返回原始字段

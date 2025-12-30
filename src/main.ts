@@ -20,7 +20,7 @@ const App = () => {
 		app = new GameApp('game-canvas', isDebugMode ? 'debug' : 'high');
 		await app.initialize(scene || 'PropertyDemoScene', { enablePhysics: true });
 
-		if (isDebugMode && useDebugPanel) {
+		if (useDebugPanel) {
 			// 性能监控面板
 			panelManager.create(PerformancePanel, {
 				toggleKey: 'F1',

@@ -101,10 +101,10 @@ export abstract class SceneComponent implements IDisposable {
 		for (const cb of this.#disposedCbs) cb();
 
 		// 清理所有回调（避免内存泄漏）
-		this.#createdCbs.length = 0;
-		this.#mountedCbs.length = 0;
-		this.#beforeUpdateCbs.length = 0;
-		this.#afterUpdateCbs.length = 0;
-		this.#disposedCbs.length = 0;
+		this.#createdCbs.clear();
+		this.#mountedCbs.clear();
+		this.#beforeUpdateCbs.clear();
+		this.#afterUpdateCbs.clear();
+		this.#disposedCbs.clear();
 	}
 }
